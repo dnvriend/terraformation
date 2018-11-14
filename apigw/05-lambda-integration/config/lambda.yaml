@@ -1,0 +1,3 @@
+template_path: templates/lambda.yaml
+parameters:
+  LambdaBasicExecutionRoleArn: !stack_output policies::LambdaBasicExecutionRoleArn

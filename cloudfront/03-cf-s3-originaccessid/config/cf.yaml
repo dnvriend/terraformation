@@ -1,0 +1,8 @@
+template_path: templates/cf.yaml
+hooks:
+  before_update:
+    - !cmd aws s3 cp html/index.html s3://$(aws cloudformation describe-stacks --stack-name cf-dnvriend-dev-us-east-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+    - !cmd aws cloudfront create-invalidation --distribution-id $(aws cloudformation describe-stacks --stack-name cf-dnvriend-dev-us-east-1-cf --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'] | [0].OutputValue" --output text) --paths /index.html
+  before_create:
+    - !cmd aws s3 cp html/index.html s3://$(aws cloudformation describe-stacks --stack-name cf-dnvriend-dev-us-east-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+    - !cmd aws cloudfront create-invalidation --distribution-id $(aws cloudformation describe-stacks --stack-name cf-dnvriend-dev-us-east-1-bucket --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'] | [0].OutputValue" --output text) --paths /index.html

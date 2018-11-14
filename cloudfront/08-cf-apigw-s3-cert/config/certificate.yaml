@@ -1,0 +1,3 @@
+template_path: templates/certificate.yaml
+parameters:
+  DomainName: helloworld.dennisvriend.com

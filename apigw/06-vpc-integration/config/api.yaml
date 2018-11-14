@@ -1,0 +1,5 @@
+template_path: templates/api.yaml
+parameters:
+  VpcLinkId: !stack_output nlb::VpcLinkId
+  NetworkLoadBalancerDnsName: !stack_output nlb::NetworkLoadBalancerDnsName
+  StageName: {{ environment_path.1 }}

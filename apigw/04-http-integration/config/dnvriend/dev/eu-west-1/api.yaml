@@ -1,0 +1,8 @@
+parameters:
+  DeploymentBucket: !stack_output bucket::DeployBucket
+  StageName: 'dev'
+hooks:
+  before_update:
+    - !cmd aws s3 cp swagger/swagger.yaml s3://$(aws cloudformation describe-stacks --stack-name http-integration-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+  before_create:
+    - !cmd aws s3 cp swagger/swagger.yaml s3://$(aws cloudformation describe-stacks --stack-name http-integration-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)

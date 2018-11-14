@@ -1,0 +1,187 @@
+{
+  "invocationId": "166983df-a46a-4eff-893f-4a598c0e67c2",
+  "deliveryStreamArn": "arn:aws:firehose:eu-west-1:612483924670:deliverystream/s3-static-website-dnvriend-dev-eu-w-Deliverystream-DK3JBDOAH8UQ",
+  "region": "eu-west-1",
+  "records": [
+    {
+      "recordId": "49590103941191708671578769993022740305161644719361490946000000",
+      "approximateArrivalTimestamp": 1542123103894,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJREVpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993023949230981259348536197122000000",
+      "approximateArrivalTimestamp": 1542123103896,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRElpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993025158156800873977710903298000000",
+      "approximateArrivalTimestamp": 1542123103896,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRE1pZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993026367082620488606885609474000000",
+      "approximateArrivalTimestamp": 1542123103896,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFFpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993027576008440103236060315650000000",
+      "approximateArrivalTimestamp": 1542123103896,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFVpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993028784934259717865235021826000000",
+      "approximateArrivalTimestamp": 1542123103896,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFlpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993029993860079332494409728002000000",
+      "approximateArrivalTimestamp": 1542123103896,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGNpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993031202785898947123584434178000000",
+      "approximateArrivalTimestamp": 1542123103897,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGdpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993032411711718561752759140354000000",
+      "approximateArrivalTimestamp": 1542123103897,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGtpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993033620637538176794250706946000000",
+      "approximateArrivalTimestamp": 1542123109404,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJREVpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993034829563357791423425413122000000",
+      "approximateArrivalTimestamp": 1542123109407,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRElpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993036038489177406052600119298000000",
+      "approximateArrivalTimestamp": 1542123109407,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRE1pZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993037247414997020681774825474000000",
+      "approximateArrivalTimestamp": 1542123109407,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFFpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993038456340816635310949531650000000",
+      "approximateArrivalTimestamp": 1542123109407,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFVpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993039665266636249940124237826000000",
+      "approximateArrivalTimestamp": 1542123109407,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFlpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993040874192455864569298944002000000",
+      "approximateArrivalTimestamp": 1542123109407,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGNpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993042083118275479198473650178000000",
+      "approximateArrivalTimestamp": 1542123109407,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGdpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993043292044095093827648356354000000",
+      "approximateArrivalTimestamp": 1542123109407,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGtpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993044500969914708525542539266000000",
+      "approximateArrivalTimestamp": 1542123111256,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJREVpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993045709895734323154717245442000000",
+      "approximateArrivalTimestamp": 1542123111258,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRElpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993046918821553937783891951618000000",
+      "approximateArrivalTimestamp": 1542123111258,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRE1pZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993048127747373552413066657794000000",
+      "approximateArrivalTimestamp": 1542123111258,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFFpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993049336673193167042241363970000000",
+      "approximateArrivalTimestamp": 1542123111258,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFVpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993050545599012781671416070146000000",
+      "approximateArrivalTimestamp": 1542123111258,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFlpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993051754524832396300590776322000000",
+      "approximateArrivalTimestamp": 1542123111258,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGNpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993052963450652010929765482498000000",
+      "approximateArrivalTimestamp": 1542123111258,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGdpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993054172376471625558940188674000000",
+      "approximateArrivalTimestamp": 1542123111258,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGtpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993055381302291243624088731650000000",
+      "approximateArrivalTimestamp": 1542123160106,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJREVpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993056590228110858253263437826000000",
+      "approximateArrivalTimestamp": 1542123160108,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRElpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993057799153930472882438144002000000",
+      "approximateArrivalTimestamp": 1542123160108,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRE1pZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993059008079750087511612850178000000",
+      "approximateArrivalTimestamp": 1542123160108,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFFpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993060217005569702140787556354000000",
+      "approximateArrivalTimestamp": 1542123160108,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFVpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993061425931389316769962262530000000",
+      "approximateArrivalTimestamp": 1542123160108,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFlpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993062634857208931399136968706000000",
+      "approximateArrivalTimestamp": 1542123160108,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGNpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993063843783028546028311674882000000",
+      "approximateArrivalTimestamp": 1542123160108,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGdpZlE9PQ=="
+    },
+    {
+      "recordId": "49590103941191708671578769993065052708848160657486381058000000",
+      "approximateArrivalTimestamp": 1542123160108,
+      "data": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRGtpZlE9PQ=="
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '10-authentication-identity-pool - ecs'
+Parameters:
+  VpcId:
+    Type: String
+  SubnetId:
+    Type: String
+
+Resources:
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+
+  EcsService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ECSCluster
+      DesiredCount: 1
+      TaskDefinition: !Ref TaskDefinition
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: httpbin
+      NetworkMode: bridge
+      ContainerDefinitions:
+        - Name: httpbin
+          Essential: true
+          Memory: 512
+          Cpu: 100
+          PortMappings:
+            - ContainerPort: 80
+              HostPort: 80
+              Protocol: tcp
+          Image: kennethreitz/httpbin:latest
+
+  ######### Ec2Instance for EC2 Cluster #############
+
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: false
+      ImageId: 'ami-0dbcd2533bc72c3f6'
+      IamInstanceProfile: !Ref InstanceProfile
+      SecurityGroupIds:
+        - !Ref VpcSecurityGroup
+      InstanceType: t3.small
+      Monitoring: false
+      SubnetId: !Ref SubnetId
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum install -y https://s3-${AWS::Region}.amazonaws.com/amazon-ssm-${AWS::Region}/latest/linux_amd64/amazon-ssm-agent.rpm
+          echo ECS_CLUSTER=${ECSCluster} > /etc/ecs/ecs.config
+
+  VpcSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 security group
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+          CidrIp: '0.0.0.0/0'
+        - FromPort: 443
+          ToPort: 443
+          IpProtocol: tcp
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleForSSM
+      Policies:
+        - PolicyName: ecs-service
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecs:CreateCluster
+                  - ecs:DeregisterContainerInstance
+                  - ecs:DiscoverPollEndpoint
+                  - ecs:Poll
+                  - ecs:RegisterContainerInstance
+                  - ecs:StartTelemetrySession
+                  - ecs:Submit*
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                  - firehose:DescribeDeliveryStream
+                  - ec2:ModifyInstanceCreditSpecification
+                Resource: '*'
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref Role
+
+Outputs:
+  Ec2PrivateIp:
+    Description: The private ip
+    Value: !GetAtt Ec2Instance.PrivateIp
+  EC2PublicIp:
+    Description: The public ip
+    Value: !GetAtt Ec2Instance.PublicIp

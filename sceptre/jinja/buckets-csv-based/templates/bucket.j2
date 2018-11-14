@@ -1,0 +1,21 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: A simple bucket
+
+Resources:
+  {% set rows = sceptre_user_data.buckets.split('\n') %}
+  {% for row in rows %}
+  {% set key_value = row.split(',') %}
+  SimpleBucket{{ key_value[0] }}:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: {{ key_value[0] }}-{{ key_value[1] }}
+      AccessControl: BucketOwnerFullControl
+      Tags:
+        -
+          Key: Name
+          Value: {{ key_value[0] }}
+        -
+          Key: Environment
+          Value: {{ key_value[1] }}
+  {% endfor %}

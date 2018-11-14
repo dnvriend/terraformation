@@ -1,0 +1,53 @@
+#
+# The open source version of the Amazon API Gateway Developer Guide is available at GitHub
+# see https://github.com/awsdocs/amazon-api-gateway-developer-guide
+#
+---
+swagger: '2.0'
+info:
+  description: 'Http Integration Example'
+  title: 'HttpIntegration'
+  version: '1.0.0'
+schemes:
+  - https
+paths:
+  /google:
+    get:
+      summary: connect to google
+      description: Connect to google
+      consumes:
+        - text/html
+      produces:
+        - text/html
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Content-Type:
+              type: string
+              description: Media type of request
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Content-Type: "'text/html'"
+        uri: https://www.google.nl
+        passthroughBehavior: when_no_match
+        httpMethod: GET
+        type: http
+x-amazon-apigateway-documentation: # Defines the documentation parts to be imported into API Gateway.
+  version: v1.0.0 # The version identifier of the snapshot of the exported documentation parts.
+  createdDate: '2016-11-17T07:03:59Z'
+  documentationParts: # An array of the exported or imported DocumentationPart instances, see: https://docs.aws.amazon.com/apigateway/api-reference/resource/documentation-part/
+    - location:
+        type: API
+      properties:
+        info:
+          description: 'Http Integration Example'
+          version: '1.0.0'
+    - location:
+        type: METHOD
+        path: /google
+        method: GET
+        summary: Connect to google

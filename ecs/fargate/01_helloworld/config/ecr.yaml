@@ -1,0 +1,8 @@
+template_path: templates/ecr.yaml
+hooks:
+  after_create:
+    - !cmd ./docker-build.sh
+    - !cmd ./docker-push.sh
+    - !cmd ./docker-write-image-url.sh
+  before_delete:
+    - !cmd ./aws-ecr-delete-images.sh

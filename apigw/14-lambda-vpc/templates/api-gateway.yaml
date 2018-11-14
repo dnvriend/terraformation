@@ -1,0 +1,197 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 14-lambda-vpc
+
+Mappings:
+  SubnetConfig:
+    VPC:
+      CIDR: 10.0.0.0/16
+    Public:
+      CIDR: 10.0.0.0/24
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: !FindInMap [SubnetConfig, VPC, CIDR]
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs: !Ref AWS::Region
+      VpcId: !Ref VPC
+      CidrBlock: !FindInMap [SubnetConfig, Public, CIDR]
+      MapPublicIpOnLaunch: true
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  GatewayAttachement:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachement
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: false
+      ImageId: ami-0bdb1d6c15a40392c
+      InstanceType: t3.micro
+      Monitoring: false
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+      - !Ref VPCSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install httpd -y
+          echo "Hello Cloud Gurus!" > /var/www/html/index.html
+          service httpd start
+          chkconfig httpd on
+
+  VPCSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 security group
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+      - FromPort: 80
+        ToPort: 80
+        IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+      - FromPort: 8080
+        ToPort: 8080
+        IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+      - FromPort: 443
+        ToPort: 443
+        IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+      - FromPort: 5000
+        ToPort: 5000
+        IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+      - IpProtocol: '-1'
+        CidrIp: 0.0.0.0/0
+
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+          Condition: {}
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+
+  AmazonAPIGatewayInvokeFullAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: apigateway.amazonaws.com
+          Action: sts:AssumeRole
+          Condition: {}
+      Path: /
+      Policies:
+      - PolicyName: ApiGateway
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:InvokeFunction
+            Resource:
+            - '*'
+
+  PythonFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: PythonFunction
+      Description: Python Function Handler
+      Handler: index.handler
+      Runtime: python3.6
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+      VpcConfig:
+        SubnetIds:
+        - !Ref PublicSubnet
+        SecurityGroupIds:
+        - !Ref VPCSecurityGroup
+
+      Code:
+        ZipFile: |-
+          import json
+          import botocore.vendored.requests as requests
+
+
+          def handler(event, context):
+              def response(msg):
+                  return {
+                      'statusCode': 200,
+                      'body': json.dumps(msg)
+                  }
+
+              x = requests.get('http://10.0.0.189')
+
+              return response(x.text)
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref RestAPIv2
+      StageName: prod
+  RestAPIv2:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      EndpointConfiguration:
+        Types:
+        - REGIONAL
+      Body:
+        swagger: '2.0'
+        info:
+          description: Lambda Integration Example
+          title: lambda-integration
+          version: 1.0.0
+        schemes:
+        - https
+        paths:
+          /python:
+            get:
+              x-amazon-apigateway-integration:
+                responses: {}
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PythonFunction.Arn}/invocations
+                credentials: !Sub ${AmazonAPIGatewayInvokeFullAccessRole.Arn}
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy

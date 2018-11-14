@@ -1,0 +1,4 @@
+template_path: templates/ecr.yaml
+hooks:
+  before_delete:
+    - !cmd ./aws-ecr-delete-images.sh

@@ -1,0 +1,3 @@
+template_path: templates/bucket.yaml
+parameters:
+  BucketName: {{ environment_config.artifacts_bucket }}

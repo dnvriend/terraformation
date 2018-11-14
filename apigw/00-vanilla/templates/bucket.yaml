@@ -1,0 +1,14 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: '00-vanilla deployment bucket'
+
+Resources:
+  DeployBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: BucketOwnerFullControl
+
+Outputs:
+  DeployBucket:
+    Description: S3 bucket name
+    Value: !Ref DeployBucket

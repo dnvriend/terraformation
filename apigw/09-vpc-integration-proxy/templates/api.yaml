@@ -1,0 +1,78 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '09-vpc-integration-proxy - api'
+Parameters:
+  VpcLinkId:
+    Description: The VpcLink Id
+    Type: String
+  NetworkLoadBalancerDnsName:
+    Description: The Network Load Balancer Dns Name
+    Type: String
+  StageName:
+    Description: API StageName
+    Type: String
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Body:
+        swagger: '2.0'
+        info:
+          description: '06-vpc-integration'
+          title: '06-vpc-integration'
+          version: 1.0.0
+        schemes:
+          - https
+        paths:
+          /{proxy+}:
+            x-amazon-apigateway-any-method:
+              description: 'a vpc link example'
+              produces:
+                - application/json
+              parameters:
+                - name: proxy
+                  in: path
+                  required: true
+                  type: string
+              responses: {}
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                requestParameters:
+                  integration.request.path.proxy: method.request.path.proxy
+                passthroughBehavior: when_no_match
+                uri: !Sub 'http://${NetworkLoadBalancerDnsName}:80/{proxy}'
+                connectionType: VPC_LINK
+                connectionId: !Ref VpcLinkId
+                httpMethod: ANY
+                cacheKeyParameters:
+                  method.request.path.proxy
+                type: http_proxy
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      RestApiId: !Ref ApiGatewayApi
+      StageName: !Ref StageName
+
+Outputs:
+  ServiceEndpoint:
+    Description: API Endpoint
+    Value: !Join
+      - ""
+      - - "https://"
+        - !Ref ApiGatewayApi
+        - ".execute-api."
+        - !Ref AWS::Region
+        - "."
+        - !Ref AWS::URLSuffix
+        - "/"
+        - !Ref ApiGatewayStage

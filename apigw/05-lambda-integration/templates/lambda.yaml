@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 05-lambda-integration
+Parameters:
+  LambdaBasicExecutionRoleArn:
+    Description: The Arn of the LambdaBasicExecutionRole
+    Type: String
+
+Resources:
+  NodeFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: NodeFunction
+      Description: Node Function Handler
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Role: !Ref LambdaBasicExecutionRoleArn
+
+
+  PythonFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: PythonFunction
+      Description: Python Function Handler
+      Handler: index.handler
+      Runtime: python3.6
+      Role: !Ref LambdaBasicExecutionRoleArn
+
+
+Outputs:
+  NodeFunctionArn:
+    Description: The ARN of the NodeFunction
+    Value: !GetAtt NodeFunction.Arn
+  PythonFunctionArn:
+    Description: The ARN of the PythonFunction
+    Value: !GetAtt PythonFunction.Arn

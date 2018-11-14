@@ -1,0 +1,78 @@
+swagger: '2.0'
+info:
+  description: 'Http Integration Example'
+  title: 'HttpIntegration'
+  version: '1.0.0'
+schemes:
+  - https
+paths:
+  /bin/proxy:
+    get:
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          headers:
+            Content-Type:
+              type: string
+  /bin/pass/status/{codes}:
+    get:
+      produces:
+        - 'application/json'
+      parameters:
+        - name: codes
+          in: path
+          required: true
+          type: integer
+      responses:
+        '200':
+          headers:
+            Content-Type:
+              type: string
+        '400':
+          headers:
+            Content-Type:
+              type: string
+  /bin/resp/{zipcode}/{housenr}:
+    get:
+      produces:
+        - 'application/json'
+      parameters:
+        - name: zipcode
+          in: path
+          required: true
+          type: string
+        - name: housenr
+          in: path
+          required: true
+          type: integer
+      responses:
+        '200':
+          headers:
+            Content-Type:
+              type: string
+  /bin/path:
+    post:
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      parameters:
+        - in: body
+          name: Address
+          required: true
+          schema:
+            "$ref": '#/definitions/Address'
+      responses:
+        '200':
+          headers:
+            Content-Type:
+              type: string
+definitions:
+  Address:
+    type: object
+    properties:
+      zipcode:
+        type: string
+      housenr:
+        type: integer

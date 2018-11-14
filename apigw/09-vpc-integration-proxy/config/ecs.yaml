@@ -1,0 +1,4 @@
+template_path: templates/ecs.yaml
+parameters:
+  VpcId: !stack_output vpc::VpcId
+  SubnetId: !stack_output vpc::SubnetId

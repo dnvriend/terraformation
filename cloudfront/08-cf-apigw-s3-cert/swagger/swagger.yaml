@@ -1,0 +1,66 @@
+#
+# The open source version of the Amazon API Gateway Developer Guide is available at GitHub
+# see https://github.com/awsdocs/amazon-api-gateway-developer-guide
+#
+---
+swagger: '2.0'
+info:
+  description: 'API with Mock Integration'
+  title: 'MockIntegration'
+  version: '1.0.0'
+schemes:
+  - https
+paths:
+  /api:
+    get:
+      description: returns a person
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Content-Type:
+              type: string
+              description: Media type of request
+          examples:
+            application/json: |-
+              {
+                "Name": "Dennis",
+                "Age": 42
+              }
+      x-amazon-apigateway-integration:
+        #  Defines the method's responses and specifies desired parameter
+        # mappings or payload mappings from integration responses to method responses.
+        #
+        responses: # Defines the method's responses and specifies desired parameter mappings or payload mappings from integration responses to method responses.
+          # see: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-swagger-extensions-integration-response.html
+          default:
+            statusCode: '200' # HTTP status code for the method response. This must correspond to a matching response in the Swagger Operation responses field.
+            responseParameters: # Specifies parameter mappings for the response. Only the header and body parameters of the integration response can be mapped to the header parameters of the method.
+              method.response.header.Content-Type: "'application/json'"
+            responseTemplates: # Specifies MIME type-specific mapping templates for the response’s payload.
+              application/json: |-
+                {
+                  "Name": "Dennis",
+                  "Age": 42
+                }
+        passthroughBehavior: when_no_match # Specifies how a request payload of unmapped content type is passed through the integration request without modification
+        requestTemplates: # Mapping templates for a request payload of specified MIME types to integration request payloads
+          application/json: '{"statusCode": 200}' # controls which status code to return, here a 200 for the mock see: # https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-mock-integration.html#how-to-mock-integration-request-examples
+        type: mock
+x-amazon-apigateway-documentation: # Defines the documentation parts to be imported into API Gateway.
+  version: v1.0.0 # The version identifier of the snapshot of the exported documentation parts.
+  createdDate: '2016-11-17T07:03:59Z'
+  documentationParts: # An array of the exported or imported DocumentationPart instances, see: https://docs.aws.amazon.com/apigateway/api-reference/resource/documentation-part/
+    - location:
+        type: API
+      properties:
+        info:
+          description: 'MockIntegration example'
+          version: '1.0.0'
+    - location:
+        type: METHOD
+        path: /api
+        method: GET
+        summary: Returns a person

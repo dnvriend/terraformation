@@ -1,0 +1,21 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: A simple bucket
+
+Resources:
+  SimpleBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: BucketOwnerFullControl
+      Tags:
+        -
+          Key: Name
+          Value: dnvriend
+        -
+          Key: Environment
+          Value: dev
+
+Outputs:
+  BucketName:
+    Description: S3 bucket name
+    Value: !Ref SimpleBucket

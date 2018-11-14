@@ -1,0 +1,3 @@
+template_path: templates/bucket.j2
+sceptre_user_data:
+  buckets: !file_contents buckets.csv

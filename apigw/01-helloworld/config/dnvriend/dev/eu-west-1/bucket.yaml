@@ -1,0 +1,4 @@
+hooks:
+  before_delete:
+    - !cmd echo 'deleting deployment bucket'
+    - !cmd aws s3 rm --recursive s3://$(aws cloudformation describe-stacks --stack-name petstore-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text) || exit 0

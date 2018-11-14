@@ -1,0 +1,3 @@
+project_code: vanilla-swagger
+profile: dnvriend
+region: {{ environment_path.2 }}

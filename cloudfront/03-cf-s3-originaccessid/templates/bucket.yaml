@@ -1,0 +1,38 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: '03-cf-s3-originaccessid'
+
+Resources:
+  DeployBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: BucketOwnerFullControl
+
+  DeployBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DeployBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AddPerm
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}
+            Action:
+              - "s3:GetObject"
+            Resource: !Sub arn:aws:s3:::${DeployBucket}/*
+
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: The origin access identity for the s3 bucket
+
+Outputs:
+  DeployBucket:
+    Description: S3 bucket name
+    Value: !Ref DeployBucket
+  DeployBucketDomainName:
+    Description: S3 Bucket Domain Name
+    Value: !GetAtt DeployBucket.DomainName

@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.7-dev"
+sudo: false
+notifications:
+  email:
+    - dnvriend@gmail.com
+install:
+  - pip install pipenv
+  - pipenv install
+script: make validate

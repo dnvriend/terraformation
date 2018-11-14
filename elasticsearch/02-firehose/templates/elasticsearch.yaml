@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 01-firehose
+
+Resources:
+  DestinationBucket:
+    Type: AWS::S3::Bucket
+
+  ProcessorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Python Function Handler
+      Handler: index.handler
+      Runtime: python3.6
+      Timeout: 60
+      Role: !GetAtt ProcessorFunctionRole.Arn
+      Code:
+        ZipFile: |
+          from base64 import b64encode, b64decode
+          import json
+
+          def handler(event, context):
+          	records = event['records']
+          	for record in records:
+          		record.pop('approximateArrivalTimestamp', None)
+          		record.update({'result': 'Ok'}) # Ok, Dropped, ProcessingFailed
+          	print(json.dumps(records))
+          	return {'records': records}
+  ProcessorFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+          Condition: {}
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      - arn:aws:iam::aws:policy/AmazonKinesisFirehoseFullAccess
+
+  DeliverystreamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: firehose.amazonaws.com
+          Action: sts:AssumeRole
+          Condition: {}
+      Path: /
+      Policies:
+      - PolicyName: Allow
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:*
+            - kms:*
+            - kinesis:*
+            - logs:*
+            - lambda:*
+            - es:*
+            Resource:
+            - '*'
+
+  Deliverystream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamType: DirectPut
+      ElasticsearchDestinationConfiguration:
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 1
+        CloudWatchLoggingOptions:
+          Enabled: true
+          LogGroupName: example-firehose
+          LogStreamName: example-firehose
+        DomainARN: !GetAtt ElasticsearchDomain.DomainArn
+        IndexName: example
+        IndexRotationPeriod: NoRotation
+        RetryOptions:
+          DurationInSeconds: 60
+        RoleARN: !GetAtt DeliverystreamRole.Arn
+        S3BackupMode: AllDocuments
+        S3Configuration:
+          BucketARN: !GetAtt DestinationBucket.Arn
+          BufferingHints:
+            IntervalInSeconds: 60
+            SizeInMBs: 1
+          CompressionFormat: UNCOMPRESSED
+          RoleARN: !GetAtt DeliverystreamRole.Arn
+        TypeName: example
+        ProcessingConfiguration:
+          Enabled: true
+          Processors:
+          - Type: Lambda
+            Parameters:
+            - ParameterName: LambdaArn
+              ParameterValue: !GetAtt ProcessorFunction.Arn
+            - ParameterName: RoleArn
+              ParameterValue: !GetAtt DeliverystreamRole.Arn
+            - ParameterName: NumberOfRetries
+              ParameterValue: '3'
+            - ParameterName: BufferSizeInMBs
+              ParameterValue: '1'
+            - ParameterName: BufferIntervalInSeconds
+              ParameterValue: '60'
+
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: example-firehose
+      RetentionInDays: 30
+  CloudWatchLogStream:
+    Type: AWS::Logs::LogStream
+    DependsOn:
+    - CloudWatchLogGroup
+    Properties:
+      LogGroupName: example-firehose
+      LogStreamName: example-firehose
+  LamdaCloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ProcessorFunction}
+      RetentionInDays: 30
+
+  ElasticsearchDomain:
+    Type: AWS::Elasticsearch::Domain
+    Properties:
+      ElasticsearchVersion: '6.3'
+      ElasticsearchClusterConfig:
+        InstanceCount: '1'
+        InstanceType: t2.small.elasticsearch
+      EBSOptions:
+        EBSEnabled: 'true'
+        Iops: 0
+        VolumeSize: 10
+        VolumeType: gp2
+      SnapshotOptions:
+        AutomatedSnapshotStartHour: '0'
+      AccessPolicies:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS: '*'
+          Action: es:*
+          Resource: '*'
+      AdvancedOptions:
+        rest.action.multi.allow_explicit_index: 'true'
+
+Outputs:
+  KinesisStreamName:
+    Description: The name of the Deliverystream
+    Value: !Ref Deliverystream
+  KinesisStreamArn:
+    Description: The arn of the Deliverystream
+    Value: !GetAtt Deliverystream.Arn
+  BucketName:
+    Description: THe name of the DestinationBucket
+    Value: !Ref DestinationBucket

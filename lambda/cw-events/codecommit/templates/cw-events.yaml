@@ -1,0 +1,55 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'codecommit logging example'
+Resources:
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: {}
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+  LogFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: 'Log CodeCommit events to CloudWatch, received from a CloudWatch event'
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+      Code:
+        ZipFile: |
+          var AWS = require('aws-sdk')
+          AWS.config.update({region: 'eu-west-1'})
+          exports.handler = function(event, context) {
+            console.log(event)
+          }
+
+  LogFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LogFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt CloudWatchEvent.Arn
+
+  CloudWatchEvent:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: 'Example rule how to trigger a lambda'
+      EventPattern:
+        source:
+          - aws.codecommit
+      State: 'ENABLED'
+      Targets:
+        -
+          Arn: !GetAtt LogFunction.Arn
+          Id: '1'
+
+

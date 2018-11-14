@@ -1,0 +1,22 @@
+template_path: templates/api.yaml
+parameters:
+  S3Bucket: {{ environment_config.artifacts_bucket }}
+  S3Key: lambda.zip
+  S3Version: !s3_version {{ environment_config.artifacts_bucket }}/lambda.zip
+hooks:
+  before_create:
+    - !cmd mkdir -p dist
+    - !cmd make dist
+    - !cmd make copy
+    - !cmd aws s3 cp dist/lambda.zip s3://dnvriend-my-deployment-bucket/lambda.zip
+  before_update:
+    - !cmd mkdir -p dist
+    - !cmd make dist
+    - !cmd make copy
+    - !cmd aws s3 cp dist/lambda.zip s3://dnvriend-my-deployment-bucket/lambda.zip
+  before_delete:
+    - !cmd aws s3 rm --recursive s3://dnvriend-my-deployment-bucket
+sceptre_user_data:
+  S3_Bucket: {{ environment_config.artifacts_bucket }}
+  S3_Key: lambda.zip
+  S3_Version: !s3_version {{ environment_config.artifacts_bucket }}/lambda.zip

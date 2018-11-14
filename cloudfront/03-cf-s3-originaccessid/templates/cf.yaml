@@ -1,0 +1,35 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: '08-cf-apigw-s3-cert - cloudfront'
+
+Parameters:
+  DeployBucket:
+    Description: The Deployment Bucket
+    Type: String
+  DeployBucketDomainName:
+    Description: The Deployment Bucket Domain Name
+    Type: String
+
+Resources:
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        DefaultCacheBehavior: #this section defines attached behaviors, first the S3 origin
+          ForwardedValues:
+            QueryString: true
+          TargetOriginId: webpage #name of the origin
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        Origins:
+          - DomainName: !Ref DeployBucketDomainName
+            Id: webpage
+            S3OriginConfig:
+              OriginAccessIdentity:
+                Ref: AWS::NoValue
+        PriceClass: PriceClass_100
+
+Outputs:
+  CloudFrontDistributionId:
+    Value: !Ref CloudFrontDistribution

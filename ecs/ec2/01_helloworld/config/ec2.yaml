@@ -1,0 +1,5 @@
+template_path: templates/ec2.yaml
+parameters:
+  VpcId: !stack_output vpc::VpcId
+  PublicSubnetId: !stack_output vpc::PublicSubnetId
+  ClusterName: !stack_output ecs::ClusterName

@@ -1,0 +1,19 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: A simple bucket
+
+Resources:
+  {% for campaign, origin in sceptre_user_data.origins.items() -%}
+    SimpleBucket{{ campaign|capitalize|replace('-','') }}:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: {{ origin.bucket }}
+      AccessControl: BucketOwnerFullControl
+      Tags:
+        -
+          Key: Name
+          Value: {{ campaign }}
+        -
+          Key: Environment
+          Value: {{ origin.path }}
+  {% endfor %}

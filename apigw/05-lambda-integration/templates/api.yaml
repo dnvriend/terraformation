@@ -1,0 +1,90 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '05-lambda-integration'
+
+Parameters:
+  StageName:
+    Description: API StageName
+    Type: String
+    Default: 'dev'
+  NodeFunctionArn:
+    Description: Arn of the nodejs function
+    Type: String
+  PythonFunctionArn:
+    Description: Arn of the nodejs function
+    Type: String
+  AmazonAPIGatewayInvokeFullAccessRoleArn:
+    Description: The Arn of the AmazonAPIGatewayInvokeFullAccessRole
+    Type: String
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Body:
+        swagger: '2.0'
+        info:
+          description: 'Lambda Integration Example'
+          title: !Ref AWS::StackName
+          version: '1.0.0'
+        schemes:
+          - https
+        paths:
+          /node:
+            get:
+              x-amazon-apigateway-integration:
+                responses: {}
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NodeFunctionArn}/invocations
+                credentials: !Ref AmazonAPIGatewayInvokeFullAccessRoleArn
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+          /python:
+            get:
+              x-amazon-apigateway-integration:
+                responses: {}
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PythonFunctionArn}/invocations
+                credentials: !Ref AmazonAPIGatewayInvokeFullAccessRoleArn
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      RestApiId: !Ref ApiGatewayApi
+      StageName: !Ref StageName
+
+Outputs:
+  NodeServiceEndpoint:
+    Description: API Endpoint
+    Value: !Join
+      - ""
+      - - "https://"
+        - !Ref ApiGatewayApi
+        - ".execute-api."
+        - !Ref AWS::Region
+        - "."
+        - !Ref AWS::URLSuffix
+        - "/"
+        - !Ref ApiGatewayStage
+        - "/node"
+  PythonServiceEndpoint:
+    Description: API Endpoint
+    Value: !Join
+      - ""
+      - - "https://"
+        - !Ref ApiGatewayApi
+        - ".execute-api."
+        - !Ref AWS::Region
+        - "."
+        - !Ref AWS::URLSuffix
+        - "/"
+        - !Ref ApiGatewayStage
+        - "/python"

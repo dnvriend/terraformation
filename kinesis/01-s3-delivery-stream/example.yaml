@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: The AWS CloudFormation template for Kinesis Stream
+Parameters:
+  Environment:
+    Description: dev, stage, or prod - this is for bucket tags
+    Type: String
+    MinLength: '3'
+    MaxLength: '5'
+Resources:
+  KinesisStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: !Join
+        - ''
+        - - test-kinesis-fh-
+          - !Ref 'Environment'
+      RetentionPeriodHours: 24
+      ShardCount: 8
+      Tags:
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Project
+          Value: Test Kinesis
+        - Key: Owner
+          Value: liz
+  KinesisFirehoseDeliveryStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: !Join
+        - ''
+        - - test-kinesis-fh-
+          - !Ref 'Environment'
+      DeliveryStreamType: KinesisStreamAsSource
+      KinesisStreamSourceConfiguration:
+        KinesisStreamARN: !GetAtt 'KinesisStream.Arn'
+        RoleARN: !GetAtt 'FirehoseDeliveryIAMRole.Arn'
+      S3DestinationConfiguration:
+        BucketARN: arn:aws:s3:::test-bucket-name
+        Prefix: cloudformation-test/kinesis-fh
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 100
+        CloudWatchLoggingOptions:
+          Enabled: 'false'
+        CompressionFormat: GZIP
+        EncryptionConfiguration:
+          NoEncryptionConfig: NoEncryption
+        RoleARN: !GetAtt 'FirehoseDeliveryIAMRole.Arn'
+    DependsOn:
+      - FirehoseDeliveryIAMPolicy
+  FirehoseDeliveryIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: firehose.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: ACCOUNT_NUMBER
+  FirehoseDeliveryIAMPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join
+        - ''
+        - - test-kinesis-fh-
+          - !Ref 'Environment'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:AbortMultipartUpload
+              - s3:GetBucketLocation
+              - s3:GetObject
+              - s3:ListBucket
+              - s3:ListBucketMultipartUploads
+              - s3:PutObject
+            Resource:
+              - arn:aws:s3:::test-bucket-name/cloudformation-test/kinesis-fh*
+          - Effect: Allow
+            Action:
+              - kinesis:DescribeStream
+              - kinesis:GetShardIterator
+              - kinesis:GetRecords
+            Resource: !GetAtt 'KinesisStream.Arn'
+      Roles:
+        - !Ref 'FirehoseDeliveryIAMRole'
+    DependsOn:
+      - KinesisStream
+Outputs:
+  kinesisStreamArn:
+    Description: Kinesis Stream ARN
+    Value: !GetAtt 'KinesisStream.Arn'
+  firehoseDeliveryStreamArn:
+    Description: Firehose Delivery Stream ARN
+    Value: !GetAtt 'KinesisFirehoseDeliveryStream.Arn'
+  firehoseDeliveryRoleArn:
+    Description: Firehose Delivery Role ARN
+    Value: !GetAtt 'FirehoseDeliveryIAMRole.Arn'

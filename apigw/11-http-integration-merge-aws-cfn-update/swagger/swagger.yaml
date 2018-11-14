@@ -1,0 +1,23 @@
+swagger: '2.0'
+info:
+  description: 'Http Integration Example'
+  title: 'HttpIntegration'
+  version: '1.0.0'
+schemes:
+  - https
+paths:
+  /google:
+    get:
+      summary: connect to google
+      description: Connect to google
+      consumes:
+        - text/html
+      produces:
+        - text/html
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Content-Type:
+              type: string
+              description: Media type of request

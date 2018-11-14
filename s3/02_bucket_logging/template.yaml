@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: S3 Bucket Logging
+
+Resources:
+  SimpleBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: BucketOwnerFullControl
+      LoggingConfiguration:
+        DestinationBucketName: !Ref LogBucket
+        LogFilePrefix: "log/"
+      Tags:
+        -
+          Key: Name
+          Value: dnvriend
+        -
+          Key: Environment
+          Value: dev
+
+  LogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
+      Tags:
+        -
+          Key: Name
+          Value: dnvriend
+        -
+          Key: Environment
+          Value: dev
+
+Outputs:
+  SimpleBucketName:
+    Description: S3 bucket name
+    Value: !Ref SimpleBucket
+  LogBucketName:
+    Description: S3 log bucket name
+    Value: !Ref LogBucket

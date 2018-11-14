@@ -1,0 +1,96 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Elastic Container Service - Fargate'
+Parameters:
+  VPCId:
+    Description: VPC Id
+    Type: String
+
+Resources:
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+
+  FargateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the Fargate containers
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
+
+  ECSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ecs.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              # Rules which allow ECS to attach network interfaces to instances
+              # on your behalf in order for awsvpc networking mode to work right
+              - 'ec2:AttachNetworkInterface'
+              - 'ec2:CreateNetworkInterface'
+              - 'ec2:CreateNetworkInterfacePermission'
+              - 'ec2:DeleteNetworkInterface'
+              - 'ec2:DeleteNetworkInterfacePermission'
+              - 'ec2:Describe*'
+              - 'ec2:DetachNetworkInterface'
+            Resource: '*'
+
+  # This is a role which is used by the ECS tasks themselves.
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ecs-tasks.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: AmazonECSTaskExecutionRolePolicy
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                # Allow the ECS Tasks to download images from ECR
+                - 'ecr:GetAuthorizationToken'
+                - 'ecr:BatchCheckLayerAvailability'
+                - 'ecr:GetDownloadUrlForLayer'
+                - 'ecr:BatchGetImage'
+
+                # Allow the ECS tasks to upload logs to CloudWatch
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+
+Outputs:
+  ClusterName:
+    Description: The name of the ECS cluster
+    Value: !Ref ECSCluster
+
+  ClusterArn:
+    Description: The Arn of the cluster
+    Value: !GetAtt ECSCluster.Arn
+
+  ECSRole:
+    Description: The ARN of the ECS role
+    Value: !GetAtt ECSRole.Arn
+
+  ECSTaskExecutionRole:
+    Description: The ARN of the ECS role
+    Value: !GetAtt ECSTaskExecutionRole.Arn
+
+  FargateSecurityGroup:
+    Description: A security group used to allow Fargate containers to receive traffic
+    Value: !Ref FargateSecurityGroup

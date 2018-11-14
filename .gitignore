@@ -1,0 +1,8 @@
+.terraform
+*.tfstate
+*.tfstate.*
+.idea
+.vscode
+target
+project/target
+.pytest_cache

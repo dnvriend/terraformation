@@ -1,0 +1,50 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '06-vpc-integration - ec2'
+Parameters:
+  VpcId:
+    Type: String
+  SubnetId:
+    Type: String
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: false
+      ImageId: ami-0bdb1d6c15a40392c
+      InstanceType: t3.micro
+      Monitoring: false
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - !Ref VPCSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install httpd -y
+          echo "Hello Cloud Gurus!" > /var/www/html/index.html
+          service httpd start
+          chkconfig httpd on
+
+  VPCSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 security group
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+
+Outputs:
+  Ec2PrivateIp:
+    Description: The private ip
+    Value: !GetAtt EC2Instance.PrivateIp
+  EC2PublicIp:
+    Description: The public ip
+    Value: !GetAtt EC2Instance.PublicIp

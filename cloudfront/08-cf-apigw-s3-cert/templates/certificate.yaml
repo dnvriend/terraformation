@@ -1,0 +1,19 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: '08-cf-apigw-s3-cert - cert'
+
+Parameters:
+  DomainName:
+    Description: The Route53 domain name to register
+    Type: String
+
+Resources:
+  CloudFrontCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+
+Outputs:
+  CloudFrontCertificate:
+    Description: The ARN of the certificate
+    Value: !Ref CloudFrontCertificate

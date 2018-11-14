@@ -1,0 +1,5 @@
+template_path: templates/kinesis.yaml
+hooks:
+  before_delete:
+    - !s3_empty_bucket kinesis::BucketName
+    - !s3_delete_bucket kinesis::BucketName

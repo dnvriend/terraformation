@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 01-s3-delivery-stream
+
+Resources:
+  DestinationBucket:
+    Type: AWS::S3::Bucket
+
+  ProcessorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: PythonFunction
+      Description: Python Function Handler
+      Handler: index.handler
+      Runtime: python3.6
+      Timeout: 60
+      Role: !GetAtt ProcessorFunctionRole.Arn
+      Code:
+        ZipFile: |
+          def handler(event, context):
+          	print(event)
+          	return {'records': event['records']}
+  ProcessorFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+          Condition: {}
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      - arn:aws:iam::aws:policy/AmazonKinesisFirehoseFullAccess
+
+  DeliverystreamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: firehose.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: {}
+      Path: /
+      Policies:
+        - PolicyName: Allow
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                  - kms:*
+                  - kinesis:*
+                  - logs:*
+                  - lambda:*
+                Resource:
+                  - '*'
+
+  Deliverystream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamType: DirectPut
+      ExtendedS3DestinationConfiguration:
+        BucketARN: !GetAtt DestinationBucket.Arn
+        RoleARN: !GetAtt DeliverystreamRole.Arn
+        Prefix: '/example-firehose'
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 1
+        CloudWatchLoggingOptions:
+          Enabled: true
+          LogGroupName: example-firehose
+          LogStreamName: example-firehose
+        CompressionFormat: UNCOMPRESSED
+        ProcessingConfiguration:
+          Enabled: true
+          Processors:
+          - Type: Lambda
+            Parameters:
+            - ParameterName: LambdaArn
+              ParameterValue: !GetAtt ProcessorFunction.Arn
+            - ParameterName: RoleArn
+              ParameterValue: !GetAtt DeliverystreamRole.Arn
+            - ParameterName: NumberOfRetries
+              ParameterValue: '3'
+            - ParameterName: BufferSizeInMBs
+              ParameterValue: '1'
+            - ParameterName: BufferIntervalInSeconds
+              ParameterValue: '60'
+
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: example-firehose
+      RetentionInDays: 30
+  CloudWatchLogStream:
+    Type: AWS::Logs::LogStream
+    DependsOn:
+      - CloudWatchLogGroup
+    Properties:
+      LogGroupName: example-firehose
+      LogStreamName: example-firehose
+  LamdaCloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ProcessorFunction}
+      RetentionInDays: 30
+
+Outputs:
+  KinesisStreamName:
+    Description: The name of the Deliverystream
+    Value: !Ref Deliverystream
+  KinesisStreamArn:
+    Description: The arn of the Deliverystream
+    Value: !GetAtt Deliverystream.Arn
+  BucketName:
+    Description: THe name of the DestinationBucket
+    Value: !Ref DestinationBucket

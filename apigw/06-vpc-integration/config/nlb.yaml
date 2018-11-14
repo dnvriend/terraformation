@@ -1,0 +1,5 @@
+template_path: templates/nlb.yaml
+parameters:
+  VpcId: !stack_output vpc::VpcId
+  SubnetId: !stack_output vpc::SubnetId
+  Ec2PrivateIp: !stack_output ec2::Ec2PrivateIp

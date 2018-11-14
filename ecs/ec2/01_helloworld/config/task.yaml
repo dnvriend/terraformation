@@ -1,0 +1,3 @@
+template_path: templates/task.yaml
+parameters:
+  ClusterName: !stack_output ecs::ClusterName

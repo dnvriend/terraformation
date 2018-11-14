@@ -1,0 +1,220 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '08-api-gateway-route53-ssl'
+Parameters:
+  S3BucketPrefix:
+    Type: String
+    Default: 'binxio-public'
+  StageName:
+    Description: API StageName
+    Type: String
+    Default: dev
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Body:
+        swagger: '2.0'
+        info:
+          description: '08-api-gateway-route53-ssl'
+          title: '08-api-gateway-route53-ssl'
+          version: 1.0.0
+        schemes:
+          - https
+        paths:
+          /cats:
+            get:
+              description: 'Cat a list of cats'
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: Successful operation
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseTemplates:
+                      application/json: |-
+                        [{
+                          "name": "Noeska",
+                          "gender", "F",
+                          "date_of_birth": 1979
+                        },
+                        {
+                          "name": "Pinkey",
+                          "gender", "F",
+                          "date_of_birth": 1986
+                        },
+                        {
+                          "name": "Elsa",
+                          "gender", "F",
+                          "date_of_birth": 1998
+                        },
+                        {
+                          "name": "Tijger",
+                          "gender", "M",
+                          "date_of_birth": 1998
+                        },
+                        {
+                          "name": "Noa",
+                          "gender", "F",
+                          "date_of_birth": 2011
+                        },
+                        {
+                          "name": "Luna",
+                          "gender", "F",
+                          "date_of_birth": 2011
+                        },
+                        {
+                          "name": "Jip",
+                          "gender", "M",
+                          "date_of_birth": 2013
+                        },
+                        {
+                          "name": "Luna",
+                          "gender", "F",
+                          "date_of_birth": 2015
+                        },
+                        {
+                          "name": "Bindi",
+                          "gender", "F",
+                          "date_of_birth": 2016
+                        }]
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                type: mock
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      RestApiId: !Ref ApiGatewayApi
+      StageName: !Ref StageName
+
+  ApiGatewayDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      RegionalCertificateArn: !Ref IssuedCertificate # the certificate must be `issued` before it can be used by ApiGateway
+      DomainName: api.dennisvriend.com
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  ApiGatewayRecordset:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: api.dennisvriend.com
+      Type: CNAME
+      HostedZoneName: dennisvriend.com.
+      TTL: '60'
+      ResourceRecords:
+        - !GetAtt 'ApiGatewayDomain.RegionalDomainName'
+
+  ApiGatewayBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    DependsOn: ApiGatewayRecordset
+    Properties:
+      DomainName: api.dennisvriend.com
+      RestApiId: !Ref ApiGatewayApi
+      Stage: !Ref ApiGatewayStage
+
+  ########### Lambda to request a certificate ###############
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: {}
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: ACM-allow
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - acm:RequestCertificate
+                  - acm:DescribeCertificate
+                  - acm:UpdateCertificateOptions
+                  - acm:DeleteCertificate
+                Resource:
+                  - '*'
+        - PolicyName: Lambda-allow
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - '*'
+
+  CFNCustomProvider:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: CFN Certificate Domain Resource Record Provider
+      Code:
+        S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
+        S3Key: 'lambdas/cfn-certificate-provider-0.2.0.zip'
+      Handler: provider.handler
+      MemorySize: 128
+      Role: !GetAtt 'LambdaRole.Arn'
+      Runtime: python3.6
+      Timeout: 300
+
+  Certificate:
+    Type: Custom::Certificate
+    Properties:
+      DomainName: api.dennisvriend.com
+      ValidationMethod: DNS
+      ServiceToken: !GetAtt CFNCustomProvider.Arn
+
+  IssuedCertificate:
+    Type: Custom::IssuedCertificate
+    Properties:
+      CertificateArn: !Ref Certificate
+      ServiceToken: !GetAtt CFNCustomProvider.Arn
+
+  CertificateDNSRecord:
+    Type: Custom::CertificateDNSRecord
+    Properties:
+      CertificateArn: !Ref Certificate
+      ServiceToken: !GetAtt CFNCustomProvider.Arn
+
+  DomainValidationRecord:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: dennisvriend.com.
+      RecordSets:
+        - Name: !Sub '${CertificateDNSRecord.Name}'
+          Type: !Sub '${CertificateDNSRecord.Type}'
+          TTL: '60'
+          ResourceRecords:
+            - !Sub '${CertificateDNSRecord.Value}'
+
+Outputs:
+  CertificateArn:
+    Description: The Arn of the certificate
+    Value: !Ref Certificate
+  CustomDomainName:
+    Description: The domain name
+    Value: https://api.dennisvriend.com/cats
+  ServiceEndpoint:
+    Description: API Endpoint
+    Value: !Sub 'https://${ApiGatewayApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${ApiGatewayStage}'

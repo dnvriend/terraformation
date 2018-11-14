@@ -1,0 +1,64 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '06-vpc-integration - nlb'
+Parameters:
+  VpcId:
+    Description: The Vpc Id
+    Type: String
+  SubnetId:
+    Description: The subnet Id
+    Type: String
+  Ec2PrivateIp:
+    Description: The private Ip address of the EC2 instance running httpd
+    Type: String
+
+Resources:
+  VpcLink:
+    Type: AWS::ApiGateway::VpcLink
+    Properties:
+      Name: !Sub 'MyVpcLink'
+      TargetArns:
+        - !Ref NetworkLoadBalancer
+
+  NetworkLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: network
+      Scheme: internal
+      Subnets:
+        - !Ref SubnetId
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: NetworkLoadBalancer
+    Properties:
+      TargetType: ip
+      Targets:
+        - Id: !Ref Ec2PrivateIp
+          Port: 80
+      Port: 80
+      Protocol: TCP
+      HealthCheckProtocol: TCP
+      HealthCheckPort: '80'
+      VpcId: !Ref VpcId
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '30'
+
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref NetworkLoadBalancer
+      Port: 80
+      Protocol: TCP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+Outputs:
+  VpcLinkId:
+    Description: The VpcLinkId
+    Value: !Ref VpcLink
+  NetworkLoadBalancerDnsName:
+    Description: The Network Load Balancer Dns Name
+    Value: !GetAtt NetworkLoadBalancer.DNSName

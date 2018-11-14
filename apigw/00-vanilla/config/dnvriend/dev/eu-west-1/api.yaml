@@ -1,0 +1,9 @@
+parameters:
+  DeploymentBucket: !stack_output bucket::DeployBucket
+  StageName: {{ environment_path.1 }}
+
+hooks:
+  before_create:
+    - !cmd aws --profile dnvriend s3 cp swagger/swagger.yaml s3://$(aws --profile dnvriend cloudformation describe-stacks --stack-name vanilla-{{ environment_path.0 }}-{{ environment_path.1 }}-{{ environment_path.2 }}-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+  before_update:
+    - !cmd aws --profile dnvriend s3 cp swagger/swagger.yaml s3://$(aws --profile dnvriend cloudformation describe-stacks --stack-name vanilla-{{ environment_path.0 }}-{{ environment_path.1 }}-{{ environment_path.2 }}-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)

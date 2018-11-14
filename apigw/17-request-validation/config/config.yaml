@@ -1,0 +1,3 @@
+project_code: dynamodb-integration
+region: {{ environment_path.2 }}
+profile: xtreme-deploy

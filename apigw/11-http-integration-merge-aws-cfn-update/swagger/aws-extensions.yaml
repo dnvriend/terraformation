@@ -1,0 +1,13 @@
+paths:
+  /google:
+    get:
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Content-Type: "'text/html'"
+        uri: https://www.google.nl
+        passthroughBehavior: when_no_match
+        httpMethod: GET
+        type: http

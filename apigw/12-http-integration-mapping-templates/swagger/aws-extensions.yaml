@@ -1,0 +1,99 @@
+paths:
+  /bin/proxy:
+    get:
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Content-Type: "'application/json'"
+        uri: 'http://httpbin.org/anything'
+        passthroughBehavior: 'when_no_match'
+        httpMethod: 'GET'
+        type: 'HTTP_PROXY'
+  /bin/pass/status/{codes}:
+    get:
+      x-amazon-apigateway-integration:
+        responses:
+          '400':
+            statusCode: '400'
+            responseParameters:
+              method.response.header.Content-Type: "'application/json'"
+            responseTemplates:
+              application/json: |-
+                {
+                  "message": "status 400 handler",
+                  "status-code": "$context.status",
+                  "context": $context,
+                  "input": $input.params(),
+                  "body": $input.body,
+                }
+                #set($context.responseOverride.status = 200)
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Content-Type: "'application/json'"
+            responseTemplates:
+              application/json: |-
+                {
+                  "message": "default-status-code-handler",
+                  "status-code": "$context.status",
+                  "context": $context,
+                  "input": $input.params(),
+                  "body": $input.body,
+                }
+        requestParameters:
+          integration.request.path.codes: method.request.path.codes
+        requestTemplates:
+          application/json: |-
+            {
+              "http-method": "$context.httpMethod",
+              "source-ip": "$context.identity.sourceIp",
+              "zipcode": "$input.params('zipcode')",
+              "housenr": "$input.params('housenr')"
+            }
+        uri: 'http://httpbin.org/status/{codes}'
+        passthroughBehavior: 'never'
+        httpMethod: 'POST'
+        type: 'http'
+  /bin/resp/{zipcode}/{housenr}:
+    get:
+      x-amazon-apigateway-integration:
+        responses:
+          default: # When setting status codes for an API method, you should choose one as the default to handle any integration response of an unanticipated status code. Can be a regex like "2\\d{2}"
+            statusCode: '200' # HTTP status code for the method response; for example, "200". This must correspond to a matching response in the swagger doc
+            responseParameters:
+              method.response.header.Content-Type: "'application/json'"
+            responseTemplates:
+              application/json: |-
+                {
+                  "housenr": $input.json('$.json.housenr'),
+                  "zipcode": $input.json('$.json.zipcode')
+                }
+        requestTemplates:
+          application/json: |-
+            {
+              "http-method": "$context.httpMethod",
+              "source-ip": "$context.identity.sourceIp",
+              "zipcode": "$input.params('zipcode')",
+              "housenr": "$input.params('housenr')"
+            }
+        uri: 'http://httpbin.org/anything'
+        passthroughBehavior: 'never'
+        httpMethod: 'POST'
+        type: 'http'
+  /bin/path:
+    post:
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Content-Type: "'application/json'"
+        requestParameters:
+          integration.request.path.zipcode: method.request.body.zipcode
+          integration.request.path.housenr: method.request.body.housenr
+        uri: 'http://httpbin.org/{zipcode}/{housenr}'
+        passthroughBehavior: 'when_no_match'
+        httpMethod: 'GET'
+        type: 'http'

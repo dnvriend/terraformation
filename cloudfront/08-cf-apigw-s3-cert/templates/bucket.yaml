@@ -1,0 +1,29 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: '08-cf-apigw-s3-cert - deploy bucket'
+
+Resources:
+  DeployBucket:
+    Type: AWS::S3::Bucket
+
+  DeployBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DeployBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AddPerm
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - "s3:GetObject"
+            Resource: !Sub arn:aws:s3:::${DeployBucket}/*
+
+Outputs:
+  DeployBucket:
+    Description: S3 bucket name
+    Value: !Ref DeployBucket
+  DeployBucketDomainName:
+    Description: S3 Bucket Domain Name
+    Value: !GetAtt DeployBucket.DomainName

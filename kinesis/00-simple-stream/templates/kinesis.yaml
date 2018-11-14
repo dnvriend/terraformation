@@ -1,0 +1,22 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: '00-simple-stream - kinesis'
+
+Resources:
+  KinesisStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: simple-stream
+      RetentionPeriodHours: 24 # default value
+      ShardCount: 1
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis # use the master key owned by Kinesis Streams
+
+Outputs:
+  KinesisStreamName:
+    Description: The name of the kinesis stream
+    Value: !Ref KinesisStream
+  KinesisStreamArn:
+    Description: The arn of the kinesis stream
+    Value: !GetAtt KinesisStream.Arn

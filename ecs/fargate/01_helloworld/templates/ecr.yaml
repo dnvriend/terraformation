@@ -1,0 +1,14 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Elastic Container Registry'
+Resources:
+  Registry:
+    Type: AWS::ECR::Repository
+
+Outputs:
+  RegistryName:
+    Description: The name of the registry
+    Value: !Ref Registry
+  RegistryArn:
+    Description: The arn of the registry
+    Value: !GetAtt Registry.Arn

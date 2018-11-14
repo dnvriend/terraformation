@@ -1,0 +1,10 @@
+template_path: templates/bucket.yaml
+hooks:
+  before_delete:
+    - !cmd aws s3 rm --recursive s3://$(aws cloudformation describe-stacks --stack-name s3-static-website-with-domain-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text) || exit 0
+  after_create:
+    - !cmd aws s3 cp html/index.html s3://$(aws cloudformation describe-stacks --stack-name s3-static-website-with-domain-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+    - !cmd aws s3 cp html/error.html s3://$(aws cloudformation describe-stacks --stack-name s3-static-website-with-domain-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+  after_update:
+    - !cmd aws s3 cp html/index.html s3://$(aws cloudformation describe-stacks --stack-name s3-static-website-with-domain-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+    - !cmd aws s3 cp html/error.html s3://$(aws cloudformation describe-stacks --stack-name s3-static-website-with-domain-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)

@@ -1,0 +1,25 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: A simple bucket
+Parameters:
+  BucketName:
+    Type: String
+    Description: The name of the bucket
+  Token:
+    Type: String
+    Description: The token to use
+
+Resources:
+  SimpleBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub cascade-${BucketName}-${Token}
+      AccessControl: BucketOwnerFullControl
+
+Outputs:
+  BucketName:
+    Description: S3 bucket name
+    Value: !Ref SimpleBucket
+  Token:
+    Description: The token
+    Value: !Ref Token

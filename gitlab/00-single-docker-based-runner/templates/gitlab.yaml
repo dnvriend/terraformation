@@ -1,0 +1,171 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '00-single-docker-based-runner - gitlab'
+Mappings:
+  SubnetConfig:
+    VPC:
+      CIDR: '10.0.0.0/16'
+    Public:
+      CIDR: '10.0.0.0/24'
+
+Parameters:
+  Url:
+    Description: GitLab Url
+    Type: String
+    Default: https://gitlab.com/
+  RegistrationToken:
+    Description: GitLab Registration Token
+    Type: String
+    Default: UdnsQyBx7xqH--MCoHK8
+  RunnerDescription:
+    Description: The GitLab runner description
+    Type: String
+    Default: aws_runner
+  Executor:
+    Description: The gitlab executor
+    Type: String
+    Default: docker
+  DockerImage:
+    Description: The default docker image
+    Type: String
+    Default: docker:latest
+  TagList:
+    Description: A CSV of names to tag the runner with
+    Type: String
+    Default: dnvriend-aws
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: !FindInMap ['SubnetConfig', 'VPC', 'CIDR']
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+         Fn::Select:
+         - 0
+         - Fn::GetAZs: {Ref: 'AWS::Region'}
+      VpcId: !Ref VPC
+      CidrBlock: !FindInMap ['SubnetConfig', 'Public', 'CIDR']
+      MapPublicIpOnLaunch: true
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  GatewayAttachement:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachement
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+
+  ######### Virtual Machine ##############
+
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: false
+      ImageId: ami-0bdb1d6c15a40392c
+      IamInstanceProfile: !Ref InstanceProfile
+      SecurityGroupIds:
+        - !Ref VpcSecurityGroup
+      InstanceType: t3.small
+      Monitoring: false
+      SubnetId: !Ref PublicSubnet
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install docker -y
+          service docker start
+          mkdir /etc/gitlab-runner
+          docker pull gitlab/gitlab-runner:latest
+          docker run -v "/etc/gitlab-runner:/etc/gitlab-runner" gitlab/gitlab-runner:latest register -n --url ${Url} --registration-token ${RegistrationToken} --description ${RunnerDescription} --executor ${Executor} --docker-image ${DockerImage} --tag-list ${TagList}
+          docker run -d -v "/etc/gitlab-runner:/etc/gitlab-runner" -v "/var/run/docker.sock:/var/run/docker.sock" -v "/root/.docker:/root/.docker" gitlab/gitlab-runner:latest
+
+  VpcSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 security group
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+          CidrIp: '0.0.0.0/0'
+        - FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+          CidrIp: '0.0.0.0/0'
+        - FromPort: 443
+          ToPort: 443
+          IpProtocol: tcp
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: dangerous
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - '*'
+                Resource: '*'
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref Role
+
+Outputs:
+  VpcId:
+    Description: The ID of the VPC that this stack is deployed in
+    Value: !Ref VPC
+  PublicSubnetId:
+    Description: The public subnet id
+    Value: !Ref PublicSubnet
+  PrivateIp:
+    Description: The private ip address
+    Value: !GetAtt Ec2Instance.PrivateIp
+  PublicIp:
+    Description: The public ip address
+    Value: !GetAtt Ec2Instance.PublicIp

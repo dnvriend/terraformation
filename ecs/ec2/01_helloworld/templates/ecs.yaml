@@ -1,0 +1,15 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Elastic Container Service - EC2'
+
+Resources:
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+
+Outputs:
+  ClusterName:
+    Description: The name of the ECS cluster
+    Value: !Ref ECSCluster
+  ClusterArn:
+    Description: The Arn of the cluster
+    Value: !GetAtt ECSCluster.Arn

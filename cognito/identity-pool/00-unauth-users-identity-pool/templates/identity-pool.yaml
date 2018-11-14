@@ -1,0 +1,16 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '00-unauth-users-identity-pool - identity-pool'
+
+Resources:
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: dnvriend_pool
+      AllowUnauthenticatedIdentities: true
+
+Outputs:
+  IdentityPoolName:
+    Value: !GetAtt IdentityPool.Name
+  IdentityPoolId:
+    Value: !Ref IdentityPool

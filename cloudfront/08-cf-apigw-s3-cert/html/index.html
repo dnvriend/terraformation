@@ -1,0 +1,15 @@
+<html>
+<script>
+    function myFunction() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            document.getElementById("demo").innerHTML = this.responseText;
+        };
+        xhttp.open("GET", "/api/", true);
+        xhttp.send();
+        console.log("Sending message");
+    }
+</script>
+<div id="demo"></div>
+<button onclick="myFunction()">Click me</button>
+</html>

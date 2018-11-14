@@ -1,0 +1,196 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 12-http-integration-mapping-templates
+
+Parameters:
+  StageName:
+    Description: API StageName
+    Type: String
+
+Resources:
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGatewayApiv17
+      StageName: !Ref StageName
+      StageDescription:
+        MethodSettings:
+        - LoggingLevel: ERROR
+          ResourcePath: /*
+          HttpMethod: '*'
+
+  ApiGatewayApiv17:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      EndpointConfiguration:
+        Types:
+        - REGIONAL
+
+      Body:
+        info:
+          description: Http Integration Example
+          title: HttpIntegration
+          version: 1.0.0
+        paths:
+          /bin/pass/status/{codes}:
+            get:
+              x-amazon-apigateway-integration:
+                passthroughBehavior: never
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Content-Type: "'application/json'"
+                    responseTemplates:
+                      application/json: |-
+                        {
+                          "message": "default-status-code-handler",
+                          "status-code": "$context.status",
+                          "context": $context,
+                          "input": $input.params(),
+                          "body": $input.body,
+                        }
+                    statusCode: '200'
+                  '400':
+                    responseParameters:
+                      method.response.header.Content-Type: "'application/json'"
+                    responseTemplates:
+                      application/json: |-
+                        {
+                          "message": "status 400 handler",
+                          "status-code": "$context.status",
+                          "context": $context,
+                          "input": $input.params(),
+                          "body": $input.body,
+                        }
+                        #set($context.responseOverride.status = 200)
+                    statusCode: '400'
+                requestParameters:
+                  integration.request.path.codes: method.request.path.codes
+                uri: http://httpbin.org/status/{codes}
+                httpMethod: POST
+                requestTemplates:
+                  application/json: |-
+                    {
+                      "http-method": "$context.httpMethod",
+                      "source-ip": "$context.identity.sourceIp",
+                      "zipcode": "$input.params('zipcode')",
+                      "housenr": "$input.params('housenr')"
+                    }
+                type: http
+              responses:
+                '200':
+                  headers:
+                    Content-Type:
+                      type: string
+                '400':
+                  headers:
+                    Content-Type:
+                      type: string
+              parameters:
+              - name: codes
+                in: path
+                required: true
+                type: integer
+              produces:
+              - application/json
+          /bin/resp/{zipcode}/{housenr}:
+            get:
+              x-amazon-apigateway-integration:
+                passthroughBehavior: never
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Content-Type: "'application/json'"
+                    responseTemplates:
+                      application/json: |-
+                        {
+                          "housenr": $input.json('$.json.housenr'),
+                          "zipcode": $input.json('$.json.zipcode')
+                        }
+                    statusCode: '200'
+                uri: http://httpbin.org/anything
+                httpMethod: POST
+                requestTemplates:
+                  application/json: |-
+                    {
+                      "http-method": "$context.httpMethod",
+                      "source-ip": "$context.identity.sourceIp",
+                      "zipcode": "$input.params('zipcode')",
+                      "housenr": "$input.params('housenr')"
+                    }
+                type: http
+              responses:
+                '200':
+                  headers:
+                    Content-Type:
+                      type: string
+              parameters:
+              - name: zipcode
+                in: path
+                required: true
+                type: string
+              - name: housenr
+                in: path
+                required: true
+                type: integer
+              produces:
+              - application/json
+          /bin/proxy:
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: GET
+                passthroughBehavior: when_no_match
+                type: HTTP_PROXY
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Content-Type: "'application/json'"
+                    statusCode: '200'
+                uri: http://httpbin.org/anything
+              responses:
+                '200':
+                  headers:
+                    Content-Type:
+                      type: string
+              produces:
+              - application/json
+          /bin/path:
+            post:
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Content-Type: "'application/json'"
+                    statusCode: '200'
+                requestParameters:
+                  integration.request.path.housenr: method.request.body.housenr
+                  integration.request.path.zipcode: method.request.body.zipcode
+                uri: http://httpbin.org/{zipcode}/{housenr}
+                httpMethod: GET
+                type: http
+              produces:
+              - application/json
+              responses:
+                '200':
+                  headers:
+                    Content-Type:
+                      type: string
+              parameters:
+              - in: body
+                name: Address
+                required: true
+                schema:
+                  $ref: '#/definitions/Address'
+              consumes:
+              - application/json
+        swagger: '2.0'
+        schemes:
+        - https
+        definitions:
+          Address:
+            type: object
+            properties:
+              zipcode:
+                type: string
+              housenr:
+                type: integer

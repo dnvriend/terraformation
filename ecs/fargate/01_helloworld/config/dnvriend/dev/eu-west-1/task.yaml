@@ -1,0 +1,10 @@
+parameters:
+  ServiceName: 'nginx'
+  ImageUrl: !file_contents docker_image_url.txt
+  ClusterName: !stack_output ecs::ClusterName
+  ContainerPort: '80'
+  ContainerCpu: '256'
+  ContainerMemory: '512'
+  ECSTaskExecutionRole: !stack_output ecs::ECSTaskExecutionRole
+  FargateSecurityGroup: !stack_output ecs::FargateSecurityGroup
+  PublicSubnet: !stack_output vpc::PublicSubnet

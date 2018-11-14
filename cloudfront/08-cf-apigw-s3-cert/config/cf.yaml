@@ -1,0 +1,19 @@
+template_path: templates/cf.yaml
+parameters:
+  DeployBucket: !stack_output bucket::DeployBucket
+  DeployBucketDomainName: !stack_output bucket::DeployBucketDomainName
+  StageName: {{ environment_path.1 }}
+  DomainName: helloworld.dennisvriend.com
+  CloudFrontHostedZoneId: Z2FDTNDATAQYW2
+  DennisVriendHostedZoneId: Z39KWGS1XWCXT5
+#  CloudFrontCertificateArn: arn:aws:acm:us-east-1:xxxxxxxxxx:certificate/3cfb6511-92db-4101-87b7-9974f7b0819b
+
+hooks:
+  before_update:
+    - !cmd aws s3 cp swagger/swagger.yaml s3://$(aws cloudformation describe-stacks --stack-name cf-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+    - !cmd aws s3 cp html/index.html s3://$(aws cloudformation describe-stacks --stack-name cf-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+    - !cmd aws cloudfront create-invalidation --distribution-id $(aws cloudformation describe-stacks --stack-name cf-dnvriend-dev-eu-west-1-cf --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'] | [0].OutputValue" --output text) --paths /index.html
+  after_create:
+    - !cmd aws s3 cp swagger/swagger.yaml s3://$(aws cloudformation describe-stacks --stack-name cf-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+    - !cmd aws s3 cp html/index.html s3://$(aws cloudformation describe-stacks --stack-name cf-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+    - !cmd aws cloudfront create-invalidation --distribution-id $(aws cloudformation describe-stacks --stack-name cf-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'] | [0].OutputValue" --output text) --paths /index.html

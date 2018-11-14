@@ -1,0 +1,120 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '10-authentication-identity-pool - api'
+Parameters:
+  VpcLinkId:
+    Description: The VpcLink Id
+    Type: String
+  NetworkLoadBalancerDnsName:
+    Description: The Network Load Balancer Dns Name
+    Type: String
+  StageName:
+    Description: API StageName
+    Type: String
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Body:
+        swagger: '2.0'
+        info:
+          description: '10-authentication-identity-pool - api'
+          title: '10-authentication-identity-pool - api'
+          version: 1.0.0
+        schemes:
+          - https
+        paths:
+          /{proxy+}:
+            x-amazon-apigateway-any-method:
+              description: 'a vpc link example'
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              parameters:
+                - name: proxy
+                  in: path
+                  required: true
+                  type: string
+              responses: {}
+              security:
+                - sigv4: []
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                requestParameters:
+                  integration.request.path.proxy: method.request.path.proxy
+                passthroughBehavior: when_no_match
+                uri: !Sub 'http://${NetworkLoadBalancerDnsName}:80/{proxy}'
+                connectionType: VPC_LINK
+                connectionId: !Ref VpcLinkId
+                httpMethod: ANY
+                cacheKeyParameters:
+                  method.request.path.proxy
+                type: http_proxy
+        securityDefinitions:
+          sigv4:
+            type: apiKey
+            name: Authorization
+            in: header
+            x-amazon-apigateway-authtype: awsSigv4
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      RestApiId: !Ref ApiGatewayApi
+      StageName: !Ref StageName
+
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: dnvriend_pool
+      AllowUnauthenticatedIdentities: true
+
+  IdentityPoolRole:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref IdentityPool
+      Roles:
+        unauthenticated: !GetAtt Role.Arn
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition: { "ForAnyValue:StringLike": {"cognito-identity.amazonaws.com:amr": "unauthenticated" },  "StringEquals": {"cognito-identity.amazonaws.com:aud": !Ref IdentityPool}}
+            Principal:
+              Federated:
+              - "cognito-identity.amazonaws.com"
+      Path: /
+      Policies:
+      - PolicyName: allow-access-to-api-gw
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              - execute-api:Invoke
+            Resource: 'arn:aws:execute-api:*:*:*'
+
+Outputs:
+  ServiceEndpoint:
+    Description: API Endpoint
+    Value: !Sub https://${ApiGatewayApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${ApiGatewayStage}
+  IdentityPoolName:
+    Description: The name of the identity pool
+    Value: !GetAtt IdentityPool.Name
+  IdentityPoolId:
+    Description: the id of the identity pool
+    Value: !Ref IdentityPool

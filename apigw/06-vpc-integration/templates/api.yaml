@@ -1,0 +1,74 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '06-vpc-integration - api'
+Parameters:
+  VpcLinkId:
+    Description: The VpcLink Id
+    Type: String
+  NetworkLoadBalancerDnsName:
+    Description: The Network Load Balancer Dns Name
+    Type: String
+  StageName:
+    Description: API StageName
+    Type: String
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Body:
+        swagger: '2.0'
+        info:
+          description: '06-vpc-integration'
+          title: '06-vpc-integration'
+          version: 1.0.0
+        schemes:
+          - https
+        paths:
+          /:
+            get:
+              description: 'a vpc link example'
+              produces:
+                - text/html
+              responses: # see: https://swagger.io/docs/specification/2-0/basic-structure/
+                # For each operation, you can define possible status codes, such as 200 OK or 404 Not Found, and schema of the response body.
+                # Schemas can be defined inline or referenced from an external definition via $ref. You can also provide example responses
+                # for different content types.
+                '200':
+                  description: Successful operation
+              x-amazon-apigateway-integration: # see: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-api-with-vpclink-using-swagger.html
+                responses: # Defines the method's responses and specifies desired parameter mappings or payload mappings from integration responses to method responses.
+                  default:
+                    statusCode: '200'
+                passthroughBehavior: when_no_match
+                uri: !Sub 'http://${NetworkLoadBalancerDnsName}:80'
+                connectionType: VPC_LINK
+                connectionId: !Ref VpcLinkId
+                httpMethod: GET
+                type: http_proxy
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      RestApiId: !Ref ApiGatewayApi
+      StageName: !Ref StageName
+
+Outputs:
+  ServiceEndpoint:
+    Description: API Endpoint
+    Value: !Join
+      - ""
+      - - "https://"
+        - !Ref ApiGatewayApi
+        - ".execute-api."
+        - !Ref AWS::Region
+        - "."
+        - !Ref AWS::URLSuffix
+        - "/"
+        - !Ref ApiGatewayStage

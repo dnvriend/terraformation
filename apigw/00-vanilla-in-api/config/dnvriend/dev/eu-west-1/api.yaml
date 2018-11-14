@@ -1,0 +1,2 @@
+parameters:
+  StageName: {{ environment_path.1 }}

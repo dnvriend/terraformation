@@ -1,0 +1,12 @@
+parameters:
+  DeploymentBucket: !stack_output bucket::DeployBucket
+  StageName: 'dev'
+hooks:
+  before_create:
+    - !cmd echo 'before_create'
+    - !cmd echo 'uploading swagger definition'
+    - !cmd aws s3 cp swagger/swagger.yaml s3://$(aws cloudformation describe-stacks --stack-name petstore-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)
+  before_update:
+    - !cmd echo 'before_update'
+    - !cmd echo 'uploading swagger definition'
+    - !cmd aws s3 cp swagger/swagger.yaml s3://$(aws cloudformation describe-stacks --stack-name petstore-dnvriend-dev-eu-west-1-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text)

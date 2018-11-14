@@ -1,0 +1,41 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '04-lambda-golang'
+Resources:
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: {}
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+  PythonFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: PythonFunction
+      Handler: index.handler
+      Runtime: python3.6
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+      Code:
+        ZipFile: |
+          def handler(event, context):
+            print('Hello World!')
+            return 'Python: Hello World!'
+
+  PythonFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${PythonFunction}'
+      RetentionInDays: 30
+
+Outputs:
+  PythonFunction:
+    Description: The ARN of the PythonFunction
+    Value: !GetAtt PythonFunction.Arn

@@ -1,0 +1,2 @@
+project_code: cats
+region: {{ environment_path.2 }}

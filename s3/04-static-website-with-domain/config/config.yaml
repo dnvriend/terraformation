@@ -1,0 +1,3 @@
+project_code: s3-static-website-with-domain
+profile: {{ environment_path.0 }}
+region: {{ environment_path.2 }}

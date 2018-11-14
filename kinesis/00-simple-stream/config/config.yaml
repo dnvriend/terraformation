@@ -1,0 +1,3 @@
+project_code: kinesis
+profile: {{ environment_path.0 }}
+region: {{ environment_path.2 }}

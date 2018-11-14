@@ -1,0 +1,11 @@
+{
+  "attemptsMade": 4,
+  "arrivalTimestamp": 1542129243417,
+  "errorCode": "400",
+  "errorMessage": "{\"type\":\"mapper_parsing_exception\",\"reason\":\"failed to parse\",\"caused_by\":{\"type\":\"not_x_content_exception\",\"reason\":\"Compressor detection can only be called on some xcontent bytes or compressed xcontent bytes\"}}",
+  "attemptEndingTimestamp": 2415358356954502,
+  "rawData": "ZXlKdFpYTnpZV2RsSWpvZ0ltaGxiR3h2SUhkdmNteGtJRFE1TUNKOQ==",
+  "esDocumentId": "49590103941191708671578770023456238888140741501001924610.0",
+  "esIndexName": "example",
+  "esTypeName": "example"
+}

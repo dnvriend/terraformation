@@ -1,0 +1,5 @@
+parameters:
+  StageName: 'dev'
+  AmazonAPIGatewayInvokeFullAccessRoleArn: !stack_output policies::AmazonAPIGatewayInvokeFullAccessRoleArn
+  NodeFunctionArn: !stack_output lambda::NodeFunctionArn
+  PythonFunctionArn: !stack_output lambda::PythonFunctionArn

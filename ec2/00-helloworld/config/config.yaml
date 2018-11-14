@@ -1,0 +1,3 @@
+project_code: ec2
+profile: {{ environment_path.0 }}
+region: {{ environment_path.2 }}

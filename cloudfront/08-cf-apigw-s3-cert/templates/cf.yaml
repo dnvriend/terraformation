@@ -1,0 +1,127 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: '08-cf-apigw-s3-cert - cloudfront'
+
+Parameters:
+  DeployBucket:
+    Description: The Deployment Bucket
+    Type: String
+  DeployBucketDomainName:
+    Description: The Deployment Bucket Domain Name
+    Type: String
+  StageName:
+    Description: API StageName
+    Type: String
+  DomainName:
+    Description: To Route53 domain name
+    Type: String
+  CloudFrontCertificateArn:
+    Description: The arn of the certificate in us-east-1
+    Type: String
+  DennisVriendHostedZoneId:
+    Description: dennisvriend.com hosted zone id
+    Type: String
+  CloudFrontHostedZoneId:
+    Description: CloudFront hosted zone id, which is a static value for all regions
+    Type: String
+
+Resources:
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref DomainName
+        DefaultCacheBehavior: #this section defines attached behaviors, first the S3 origin
+          ForwardedValues:
+            QueryString: true
+          TargetOriginId: webpage #name of the origin
+          ViewerProtocolPolicy: redirect-to-https
+        CacheBehaviors: #second the behavior for the API Gateway
+          - AllowedMethods: #allow all method for the backend to implement
+              - DELETE
+              - GET
+              - HEAD
+              - OPTIONS
+              - PATCH
+              - POST
+              - PUT
+            CachedMethods: #cache only on get requests
+              - GET
+              - HEAD
+              - OPTIONS
+            Compress: true
+            ForwardedValues:
+              Headers: #define explicit headers, since API Gateway doesn't work otherwise
+                - Accept
+                - Referer
+                - Athorization
+                - Content-Type
+              QueryString: true #to transfer get parameters to the gateway
+            PathPattern: "/api/*" #path pattern after the Gateway stage identifier.
+            TargetOriginId: api #id of the orignin
+            ViewerProtocolPolicy: https-only #API Gateway only support https
+        DefaultRootObject: index.html
+        Enabled: true
+        Origins:
+          - DomainName: !Ref DeployBucketDomainName
+            Id: webpage
+            S3OriginConfig:
+              OriginAccessIdentity:
+                Ref: AWS::NoValue
+          - DomainName: !Sub ${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com
+            Id: api
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only #again API-Gateway only supports https
+            OriginPath: !Sub /${StageName} #name of the deployed stage
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CloudFrontCertificateArn
+          SslSupportMethod: sni-only
+
+  ApiGatewayApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      BodyS3Location:
+        Bucket: !Ref DeployBucket
+        Key: 'swagger.yaml'
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      RestApiId: !Ref ApiGatewayApi
+      StageName: !Ref StageName
+
+  CloudFrontRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: !Ref DomainName
+      Type: A
+      HostedZoneId: !Ref DennisVriendHostedZoneId
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: !Ref CloudFrontHostedZoneId
+
+Outputs:
+  CloudFrontDistributionId:
+    Value: !Ref CloudFrontDistribution
+  CloudFrontUrl:
+    Value: !Sub https://${CloudFrontDistribution.DomainName}
+  ServiceEndpoint:
+    Description: API Endpoint
+    Value: !Join
+      - ""
+      - - "https://"
+        - !Ref ApiGatewayApi
+        - ".execute-api."
+        - !Ref AWS::Region
+        - "."
+        - !Ref AWS::URLSuffix
+        - "/"
+        - !Ref ApiGatewayStage

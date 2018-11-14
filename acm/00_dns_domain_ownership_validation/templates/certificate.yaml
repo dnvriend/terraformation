@@ -1,0 +1,91 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'Create a cert with domain validation'
+
+Parameters:
+  S3BucketPrefix:
+    Type: String
+    Default: 'binxio-public'
+
+Resources:
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: {}
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: ACM-allow
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - acm:RequestCertificate
+                  - acm:DescribeCertificate
+                  - acm:UpdateCertificateOptions
+                  - acm:DeleteCertificate
+                Resource:
+                  - '*'
+        - PolicyName: Lambda-allow
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - '*'
+
+  CFNCustomProvider:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: CFN Certificate Domain Resource Record Provider
+      Code:
+        S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
+        S3Key: 'lambdas/cfn-certificate-provider-0.2.0.zip'
+      Handler: provider.handler
+      MemorySize: 128
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.6
+      Timeout: 300
+
+  Certificate:
+    Type: Custom::Certificate
+    Properties:
+      DomainName: '*.dennisvriend.com'
+      ValidationMethod: DNS
+      ServiceToken: !GetAtt CFNCustomProvider.Arn
+
+  IssuedCertificate:
+    Type: Custom::IssuedCertificate
+    Properties:
+      CertificateArn: !Ref Certificate
+      ServiceToken: !GetAtt CFNCustomProvider.Arn
+
+  CertificateDNSRecord:
+    Type: Custom::CertificateDNSRecord
+    Properties:
+      CertificateArn: !Ref Certificate
+      ServiceToken: !GetAtt CFNCustomProvider.Arn
+
+  DomainValidationRecord:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: dennisvriend.com.
+      RecordSets:
+        - Name: !Sub '${CertificateDNSRecord.Name}'
+          Type: !Sub '${CertificateDNSRecord.Type}'
+          TTL: '60'
+          ResourceRecords:
+            - !Sub '${CertificateDNSRecord.Value}'
+
+Outputs:
+  IssuedCertificateArn:
+    Description: The Arn of the certificate
+    Value: !Ref IssuedCertificate

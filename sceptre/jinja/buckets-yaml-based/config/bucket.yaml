@@ -1,0 +1,9 @@
+template_path: templates/bucket.j2
+sceptre_user_data:
+  origins:
+    campaign-a:
+      path: /a
+      bucket: s3-campaign-a
+    campaign-b:
+      path: /b
+      bucket: s3-campaign-a

@@ -1,0 +1,3 @@
+hooks:
+  before_delete:
+    - !cmd aws --profile dnvriend s3 rm --recursive s3://$(aws --profile dnvriend cloudformation describe-stacks --stack-name vanilla-{{ environment_path.0 }}-{{ environment_path.1 }}-{{ environment_path.2 }}-bucket --query "Stacks[0].Outputs[?OutputKey=='DeployBucket'] | [0].OutputValue" --output text) || exit 0

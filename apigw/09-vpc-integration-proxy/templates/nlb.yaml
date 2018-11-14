@@ -1,0 +1,73 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '09-vpc-integration-proxy - nlb'
+Parameters:
+  VpcId:
+    Description: The Vpc Id
+    Type: String
+  SubnetId:
+    Description: The subnet Id
+    Type: String
+  Ec2PrivateIp:
+    Description: The private Ip address of the EC2 instance running httpd
+    Type: String
+
+Resources:
+  VpcLink:
+    Type: AWS::ApiGateway::VpcLink
+    Properties:
+      Name: MyVpcLink
+      TargetArns:
+        - !Ref NetworkLoadBalancer
+
+  # A load balancer serves as the single point of contact for clients.
+  # The load balancer distributes incoming traffic across multiple targets,
+  # such as Amazon EC2 instances.
+  NetworkLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: network
+      Scheme: internal
+      Subnets:
+        - !Ref SubnetId
+
+  # https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-listeners.html
+  # Add one or more listeners to the NLB.
+  # A listener checks for connection requests from clients, using the protocol and port that you configure,
+  # and forwards requests to a target group.
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref NetworkLoadBalancer
+      Port: 80
+      Protocol: TCP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  # Each target group routes requests to one or more registered targets, such as EC2 instances,
+  # using the TCP protocol and the port number that you specify.
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: NetworkLoadBalancer
+    Properties:
+      TargetType: ip
+      Targets:
+        - Id: !Ref Ec2PrivateIp
+          Port: 80
+      Port: 80
+      Protocol: TCP
+      HealthCheckProtocol: TCP
+      HealthCheckPort: '80'
+      VpcId: !Ref VpcId
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '30'
+
+Outputs:
+  VpcLinkId:
+    Description: The VpcLinkId
+    Value: !Ref VpcLink
+  NetworkLoadBalancerDnsName:
+    Description: The Network Load Balancer Dns Name
+    Value: !GetAtt NetworkLoadBalancer.DNSName

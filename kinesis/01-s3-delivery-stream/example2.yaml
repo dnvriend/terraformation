@@ -1,0 +1,202 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  DomainName:
+    Type: String
+    Description: imported variable
+  Environment:
+    Type: String
+    Description: imported variable
+  ExternalDomainName:
+    Type: String
+    Description: imported variable
+  AppVPC:
+    Type: AWS::EC2::VPC::Id
+    Default: ''
+Mappings:
+  Environments:
+    dev:
+      ExpirationInDays: '7'
+      KeepLogFilesInDays: '7'
+    test:
+      ExpirationInDays: '180'
+      KeepLogFilesInDays: '180'
+    prod:
+      ExpirationInDays: '365'
+      KeepLogFilesInDays: '365'
+Resources:
+  AuditLogS3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - s3.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+  AuditLogBucket:
+    Type: AWS::S3::Bucket
+    DependsOn:
+      - AuditLogS3Role
+    DeletionPolicy: Retain
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub '${ExternalDomainName}-audit-log-${AWS::Region}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: StandardRule
+            Status: Enabled
+            Prefix: audit-firehose
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+            ExpirationInDays: !FindInMap
+              - Environments
+              - !Ref 'Environment'
+              - ExpirationInDays
+  DeliveryStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    DependsOn:
+      - DeliveryPolicy
+      - CloudWatchLogGroup
+    Properties:
+      DeliveryStreamName: !Sub '${DomainName}-audit-log'
+      ExtendedS3DestinationConfiguration:
+        BucketARN: !Sub 'arn:aws:s3:::${AuditLogBucket}'
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 50
+        EncryptionConfiguration:
+          KMSEncryptionConfig:
+            AWSKMSKeyARN: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/s3'
+        CompressionFormat: UNCOMPRESSED
+        Prefix: audit-firehose/
+        RoleARN: !GetAtt 'DeliveryRole.Arn'
+        CloudWatchLoggingOptions:
+          Enabled: true
+          LogGroupName: !Sub '/${DomainName}/audit-firehose'
+          LogStreamName: audit-firehose
+        ProcessingConfiguration:
+          Enabled: true
+          Processors:
+            - Parameters:
+                - ParameterName: LambdaArn
+                  ParameterValue: !GetAtt 'InjectRecordIdFunction.Arn'
+                - ParameterName: BufferIntervalInSeconds
+                  ParameterValue: 60
+                - ParameterName: BufferSizeInMBs
+                  ParameterValue: 3
+                - ParameterName: RoleArn
+                  ParameterValue: !GetAtt 'DeliveryRole.Arn'
+              Type: Lambda
+  DeliveryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: firehose.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref 'AWS::AccountId'
+  DeliveryPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: FirehoseAuditDeliveryPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource:
+              - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/${DomainName}/audit-firehose'
+              - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/${DomainName}/audit-firehose/*'
+          - Effect: Allow
+            Action:
+              - s3:AbortMultipartUpload
+              - s3:GetBucketLocation
+              - s3:GetObject
+              - s3:ListBucket
+              - s3:ListBucketMultipartUploads
+              - s3:PutObject
+            Resource:
+              - !Sub 'arn:aws:s3:::${AuditLogBucket}'
+              - !Sub 'arn:aws:s3:::${AuditLogBucket}/*'
+          - Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+              - lambda:GetFunctionConfiguration
+            Resource:
+              - !GetAtt 'InjectRecordIdFunction.Arn'
+      Roles:
+        - !Ref 'DeliveryRole'
+  InjectRecordIdFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Timeout: 60
+      Code:
+        ZipFile: !Sub
+        "'use strict';\nexports.handler = (event, context, callback)\
+          \ => {\n    const output = event.records.map((record) => {\n        var\
+          \ data = JSON.parse(new Buffer(record.data, 'base64').toString('UTF8'));\n\
+          \        data.id = record.recordId;\n        return {\n            recordId:\
+          \ record.recordId,\n            result: 'Ok',\n            data: (new Buffer(JSON.stringify(data))).toString('base64')\n\
+          \        };\n    });\n    callback(null, { records: output });\n};\n"
+      Runtime: nodejs4.3
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                Resource: arn:aws:logs:*:*:*
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/${DomainName}/audit-firehose'
+      RetentionInDays: !FindInMap
+        - Environments
+        - !Ref 'Environment'
+        - KeepLogFilesInDays
+  CloudWatchLogStream:
+    Type: AWS::Logs::LogStream
+    DependsOn:
+      - CloudWatchLogGroup
+    Properties:
+      LogGroupName: !Sub '/${DomainName}/audit-firehose'
+      LogStreamName: audit-firehose

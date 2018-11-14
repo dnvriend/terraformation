@@ -1,0 +1,226 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: '05-cf-s3-dual-domains - cloudfront'
+
+Resources:
+  DeployBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: BucketOwnerFullControl
+
+  DeployBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DeployBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AddPerm
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - "s3:GetObject"
+            Resource: !Sub arn:aws:s3:::${DeployBucket}/*
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - test.dennisvriend.com
+          - test.dnvriend.com
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: true
+          TargetOriginId: webpage
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        Origins:
+          - DomainName: !GetAtt DeployBucket.DomainName
+            Id: webpage
+            S3OriginConfig:
+              OriginAccessIdentity:
+                Ref: AWS::NoValue
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn: !Ref IssuedCertificate
+          SslSupportMethod: sni-only
+
+  HostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: test.dennisvriend.com
+      HostedZoneConfig:
+        Comment: dennisvriend test hosted zone
+
+  RecordSetGroup:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      Comment: NS records for test.dennisvriend.com
+      HostedZoneName: dennisvriend.com.
+      RecordSets:
+        - Name: test.dennisvriend.com
+          Type: NS
+          TTL: '300'
+          ResourceRecords:
+            - !Select [ 0, !GetAtt HostedZone.NameServers ]
+            - !Select [ 1, !GetAtt HostedZone.NameServers ]
+            - !Select [ 2, !GetAtt HostedZone.NameServers ]
+            - !Select [ 3, !GetAtt HostedZone.NameServers ]
+
+  CloudFrontRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: test.dennisvriend.com.
+      Name: test.dennisvriend.com
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
+  DVHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: test.dnvriend.com
+      HostedZoneConfig:
+        Comment: dnvriend test hosted zone
+
+  DVRecordSetGroup:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      Comment: NS records for test.dennisvriend.com
+      HostedZoneName: dnvriend.com.
+      RecordSets:
+        - Name: test.dnvriend.com
+          Type: NS
+          TTL: '300'
+          ResourceRecords:
+            - !Select [ 0, !GetAtt DVHostedZone.NameServers ]
+            - !Select [ 1, !GetAtt DVHostedZone.NameServers ]
+            - !Select [ 2, !GetAtt DVHostedZone.NameServers ]
+            - !Select [ 3, !GetAtt DVHostedZone.NameServers ]
+
+  DVCloudFrontRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: test.dnvriend.com.
+      Name: test.dnvriend.com
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
+  ########### Lambda to request a certificate ###############
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: AllowLambdaAccessToACM
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - acm:RequestCertificate
+                  - acm:DescribeCertificate
+                  - acm:UpdateCertificateOptions
+                  - acm:DeleteCertificate
+                Resource:
+                  - '*'
+        - PolicyName: AllowInvokeACMLambda
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - "*"
+
+  CFNCustomProvider:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: CFN Certificate Domain Resource Record Provider
+      Code:
+        S3Bucket: !Sub 'binxio-public-${AWS::Region}'
+        S3Key: 'lambdas/cfn-certificate-provider-0.2.0.zip'
+      Handler: provider.handler
+      MemorySize: 128
+      Role: !GetAtt 'LambdaRole.Arn'
+      Runtime: python3.6
+      Timeout: 300
+
+  Certificate:
+    Type: Custom::Certificate
+    Properties:
+      DomainName: test.dennisvriend.com
+      SubjectAlternativeNames:
+        - test.dnvriend.com
+      ValidationMethod: DNS
+      ServiceToken: !GetAtt 'CFNCustomProvider.Arn'
+
+  IssuedCertificate:
+    Type: Custom::IssuedCertificate
+    Properties:
+      CertificateArn: !Ref 'Certificate'
+      ServiceToken: !GetAtt 'CFNCustomProvider.Arn'
+
+  CertificateDNSRecord:
+    Type: Custom::CertificateDNSRecord
+    Properties:
+      CertificateArn: !Ref 'Certificate'
+      DomainName: test.dennisvriend.com
+      ServiceToken: !GetAtt 'CFNCustomProvider.Arn'
+
+  DVCertificateDNSRecord:
+    Type: Custom::CertificateDNSRecord
+    Properties:
+      CertificateArn: !Ref 'Certificate'
+      DomainName: test.dnvriend.com
+      ServiceToken: !GetAtt 'CFNCustomProvider.Arn'
+
+  DomainValidationRecord:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: test.dennisvriend.com.
+      RecordSets:
+        - Name: !Sub '${CertificateDNSRecord.Name}'
+          Type: !Sub '${CertificateDNSRecord.Type}'
+          TTL: '60'
+          Weight: 1
+          SetIdentifier: acm-domain-1
+          ResourceRecords:
+            - !Sub '${CertificateDNSRecord.Value}'
+
+  DVomainValidationRecord:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: test.dnvriend.com.
+      RecordSets:
+        - Name: !Sub '${DVCertificateDNSRecord.Name}'
+          Type: !Sub '${DVCertificateDNSRecord.Type}'
+          TTL: '60'
+          Weight: 1
+          SetIdentifier: acm-domain-1
+          ResourceRecords:
+            - !Sub '${DVCertificateDNSRecord.Value}'
+
+Outputs:
+  CloudFrontDistributionId:
+    Value: !Ref CloudFrontDistribution
+  DeployBucket:
+    Description: S3 bucket name
+    Value: !Ref DeployBucket
+  DeployBucketDomainName:
+    Description: S3 Bucket Domain Name
+    Value: !GetAtt DeployBucket.DomainName

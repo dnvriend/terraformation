@@ -1,0 +1,60 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '03-mock-integration'
+
+Parameters:
+  DeploymentBucket:
+    Description: Deployment Bucket Name
+    Type: String
+  StageName:
+    Description: API StageName
+    Type: String
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      BodyS3Location:
+        Bucket: !Ref DeploymentBucket
+        Key: 'swagger.yaml'
+
+  Account:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt 'CloudWatchLogRole.Arn'
+
+  CloudWatchLogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - apigateway.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      StageName: !Ref StageName
+      StageDescription:
+        MethodSettings:
+        - LoggingLevel: INFO # OFF | ERROR | INFO
+          ResourcePath: /*
+          HttpMethod: '*'
+
+        AccessLogSetting:
+          DestinationArn: !GetAtt 'CloudWatchAccessLogGroup.Arn'
+          Format: '$context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId'
+
+  CloudWatchAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub 'api-gateway-access-logs'
+      RetentionInDays: 30

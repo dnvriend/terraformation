@@ -1,0 +1,23 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '00-simple table'
+
+Resources:
+  Table:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Names
+      AttributeDefinitions:
+      - AttributeName: Name
+        AttributeType: S
+      KeySchema:
+      - AttributeName: Name
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+
+Outputs:
+  TableArn:
+    Description: The Arn of the table
+    Value: !GetAtt Table.Arn

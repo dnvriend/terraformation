@@ -1,0 +1,68 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: '04-static-website-with-domain'
+
+Mappings:
+  RegionMap:
+    eu-west-1:
+      S3hostedzoneID: Z1BKCTXD74EZPE
+      websiteendpoint: s3-website-eu-west-1.amazonaws.com
+
+Parameters:
+  DennisVriendHostedZoneId:
+    Type: String
+    Default: Z39KWGS1XWCXT5
+  BucketName:
+    Type: String
+    Default: www.foo.bar.baz.dennisvriend.com
+
+Resources:
+  DeployBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+
+  DeployBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DeployBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - "s3:GetObject"
+            Resource: !Sub arn:aws:s3:::${DeployBucket}/*
+
+  DeployBucketRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: !Ref DeployBucket
+      Type: A
+      HostedZoneId: !Ref DennisVriendHostedZoneId
+      AliasTarget:
+        DNSName: !FindInMap [ RegionMap, !Ref 'AWS::Region', websiteendpoint]
+        HostedZoneId: !FindInMap [ RegionMap, !Ref 'AWS::Region', S3hostedzoneID]
+
+Outputs:
+  DeployBucket:
+    Description: S3 bucket name
+    Value: !Ref DeployBucket
+  DeployBucketDomainName:
+    Description: S3 Bucket Domain Name
+    Value: !GetAtt DeployBucket.DomainName
+  DeployBucketUrl:
+    Description: Url of the s3 bucket holding website content
+    Value: !Sub http://${DeployBucket.DomainName}
+  DeployBucketUrlSecure:
+    Description: Url of the s3 bucket holding website content
+    Value: !Sub https://${DeployBucket.DomainName}
+  BucketWebsiteUrl:
+    Description: Url for the s3 website hosted on S3
+    Value: !GetAtt DeployBucket.WebsiteURL

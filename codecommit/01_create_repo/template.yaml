@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: A CodeCommit Repo
+
+Resources:
+  SimpleBucket:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryDescription: "This is the Sample App Repository"
+      RepositoryName: "my_test_repository"
+
+Outputs:
+  BucketName:
+    Description: S3 bucket name
+    Value: !Ref SimpleBucket

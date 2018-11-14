@@ -1,0 +1,54 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '01-helloworld'
+Resources:
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: {}
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+  NodeFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: NodeFunction
+      Description: 'Log CodeCommit events to CloudWatch, received from a CloudWatch event'
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+      Code:
+        ZipFile: |
+          exports.handler = function(event, context, callback) {
+            console.log(event)
+            callback(null, 'NodeJS: Hello World!')
+          }
+
+  PythonFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: PythonFunction
+      Description: 'Log CodeCommit events to CloudWatch, received from a CloudWatch event'
+      Handler: index.handler
+      Runtime: python3.6
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+      Code:
+        ZipFile: |
+          def handler(event, context):
+            print('Hello World!')
+            return 'Python: Hello World!'
+
+Outputs:
+  NodeFunction:
+    Description: The ARN of the NodeFunction
+    Value: !GetAtt NodeFunction.Arn
+  PythonFunction:
+    Description: The ARN of the PythonFunction
+    Value: !GetAtt PythonFunction.Arn

@@ -1,0 +1,46 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '04-http-integration'
+
+Parameters:
+  DeploymentBucket:
+    Description: Deployment Bucket Name
+    Type: String
+  StageName:
+    Description: API StageName
+    Type: String
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      BodyS3Location:
+        Bucket: !Ref DeploymentBucket
+        Key: 'swagger.yaml'
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      RestApiId: !Ref ApiGatewayApi
+      StageName: !Ref StageName
+
+Outputs:
+  ServiceEndpoint:
+    Description: API Endpoint
+    Value: !Join
+      - ""
+      - - "https://"
+        - !Ref ApiGatewayApi
+        - ".execute-api."
+        - !Ref AWS::Region
+        - "."
+        - !Ref AWS::URLSuffix
+        - "/"
+        - !Ref ApiGatewayStage
+        - "/google"

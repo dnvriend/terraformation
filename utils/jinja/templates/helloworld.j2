@@ -1,0 +1,16 @@
+{%- macro foo() -%}
+  SimpleBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: BucketOwnerFullControl
+      Tags:
+        -
+          Key: Name
+          Value: dnvriend
+        -
+          Key: Environment
+          Value: dev
+{% endmacro %}
+
+Resources:
+  {{ foo() }}

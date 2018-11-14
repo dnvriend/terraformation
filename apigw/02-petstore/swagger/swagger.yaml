@@ -1,0 +1,82 @@
+swagger: '2.0'
+info:
+  description: Your first API with Amazon API Gateway. This is a sample API that integrates via HTTP with our demo Pet Store endpoints
+  title: PetStore
+  version: 1.0.0
+schemes:
+  - https
+paths:
+  /:
+    get:
+      tags:
+        - pets
+      description: PetStore HTML web page containing API usage information
+      consumes:
+        - application/json
+      produces:
+        - text/html
+      responses:
+        '200':
+          description: Successful operation
+          headers:
+            Content-Type:
+              type: string
+              description: Media type of request
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Content-Type: '''text/html'''
+            responseTemplates:
+              text/html: |-
+                <html>
+                    <head>
+                        <style>
+                        body {
+                            color: #333;
+                            font-family: Sans-serif;
+                            max-width: 800px;
+                            margin: auto;
+                        }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Welcome to your Pet Store API</h1>
+                        <p>
+                            You have succesfully deployed your first API. You are seeing this HTML page because the <code>GET</code> method to the root resource of your API returns this content as a Mock integration.
+                        </p>
+                        <p>
+                            The Pet Store API contains the <code>/pets</code> and <code>/pets/{petId}</code> resources. By making a <a href="/$context.stage/pets/" target="_blank"><code>GET</code> request</a> to <code>/pets</code> you can retrieve a list of Pets in your API. If you are looking for a specific pet, for example the pet with ID 1, you can make a <a href="/$context.stage/pets/1" target="_blank"><code>GET</code> request</a> to <code>/pets/1</code>.
+                        </p>
+                        <p>
+                            You can use a REST client such as <a href="https://www.getpostman.com/" target="_blank">Postman</a> to test the <code>POST</code> methods in your API to create a new pet. Use the sample body below to send the <code>POST</code> request:
+                        </p>
+                        <pre>
+                {
+                    "type" : "cat",
+                    "price" : 123.11
+                }
+                        </pre>
+                    </body>
+                </html>
+        passthroughBehavior: when_no_match
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        type: mock
+x-amazon-apigateway-documentation:
+  version: v1.0.0
+  createdDate: '2016-11-17T07:03:59Z'
+  documentationParts:
+    - location:
+        type: API
+      properties:
+        info:
+          description: Your first API with Amazon API Gateway. This is a sample API that integrates via HTTP with our demo Pet Store endpoints
+    - location:
+        type: METHOD
+        method: GET
+      properties:
+        tags:
+          - pets
+        description: PetStore HTML web page containing API usage information

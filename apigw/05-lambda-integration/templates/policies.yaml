@@ -1,0 +1,49 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '05-lambda-integration'
+Resources:
+  AmazonAPIGatewayInvokeFullAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: {}
+      Path: /
+      Policies:
+        - PolicyName: ApiGateway
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - '*'
+
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: {}
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+Outputs:
+  AmazonAPIGatewayInvokeFullAccessRoleArn:
+    Description: The ARN of the AmazonAPIGatewayInvokeFullAccessRole
+    Value: !GetAtt AmazonAPIGatewayInvokeFullAccessRole.Arn
+
+  LambdaBasicExecutionRoleArn:
+    Description: The ARN of the LambdaBasicExecutionRole
+    Value: !GetAtt LambdaBasicExecutionRole.Arn
+
+

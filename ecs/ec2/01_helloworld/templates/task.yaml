@@ -1,0 +1,43 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS Task - EC2'
+
+Parameters:
+  ClusterName:
+    Description: The name of the ecs cluster
+    Type: String
+
+Resources:
+  EcsService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ClusterName
+      DesiredCount: 1
+      TaskDefinition: !Ref TaskDefinition
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: httpbin
+      NetworkMode: bridge
+      ContainerDefinitions:
+        - Name: httpbin
+          Essential: true
+          Memory: 512
+          Cpu: 100
+          PortMappings:
+            - ContainerPort: 80
+              HostPort: 80
+              Protocol: tcp
+          Image: kennethreitz/httpbin:latest
+
+Outputs:
+  TaskDefinitionArn:
+    Description: The Arn of the task definition
+    Value: !Ref TaskDefinition
+  ECSServiceName:
+    Description: The Name of the ECS Service
+    Value: !GetAtt EcsService.Name
+  ECSServiceArn:
+    Description: The Arn of the ECS Service
+    Value: !Ref EcsService

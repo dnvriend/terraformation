@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 11-http-integration-merge-aws-cfn-update
+
+Parameters:
+  StageName:
+    Description: API StageName
+    Type: String
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::ApiGateway::RestApi
+
+    Properties:
+      Body:
+        info:
+          description: Http Integration Example
+          title: HttpIntegration
+          version: 1.0.0
+        paths:
+          /google:
+            get:
+              description: Connect to google
+              produces:
+              - text/html
+              x-amazon-apigateway-integration:
+                httpMethod: GET
+                passthroughBehavior: when_no_match
+                type: http
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Content-Type: "'text/html'"
+                    statusCode: '200'
+                uri: https://www.google.nl
+              summary: connect to google
+              consumes:
+              - text/html
+              responses:
+                '200':
+                  description: Successful operation
+                  headers:
+                    Content-Type:
+                      type: string
+                      description: Media type of request
+        swagger: '2.0'
+        schemes:
+        - https
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      RestApiId: !Ref ApiGatewayApi
+      StageName: !Ref StageName
+
+Outputs:
+  ServiceEndpoint:
+    Description: API Endpoint
+    Value: !Sub 'https://${ApiGatewayApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${ApiGatewayStage}/google'

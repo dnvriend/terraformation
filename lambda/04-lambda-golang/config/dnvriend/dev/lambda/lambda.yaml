@@ -1,0 +1,10 @@
+template_path: templates/lambda.yaml
+before_create:
+  - !s3_package dist/golang
+before_update:
+  - !s3_package dist/golang
+sceptre_user_data:
+  Code:
+    S3Bucket: {{ environment_config.artifacts_bucket }}
+    S3Key: lambda/golang-lambda.zip
+    S3ObjectVersion: !s3_version
