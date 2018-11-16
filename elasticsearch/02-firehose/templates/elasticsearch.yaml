@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 01-firehose
+Description: 02-firehose
 
 Resources:
   DestinationBucket:
@@ -17,11 +17,14 @@ Resources:
         ZipFile: |
           from base64 import b64encode, b64decode
           import json
+          import uuid
 
           def handler(event, context):
           	records = event['records']
           	for record in records:
           		record.pop('approximateArrivalTimestamp', None)
+          		msg = b64encode(bytes(json.dumps({'message': f'bye world! {uuid.uuid4()}'}), 'utf-8')).decode('ascii')
+          		record.update({'data': msg})
           		record.update({'result': 'Ok'}) # Ok, Dropped, ProcessingFailed
           	print(json.dumps(records))
           	return {'records': records}
@@ -80,7 +83,7 @@ Resources:
           LogStreamName: example-firehose
         DomainARN: !GetAtt ElasticsearchDomain.DomainArn
         IndexName: example
-        IndexRotationPeriod: NoRotation
+        IndexRotationPeriod: OneHour # NoRotation, OneHour, OneDay, OneWeek, or OneMonth.
         RetryOptions:
           DurationInSeconds: 60
         RoleARN: !GetAtt DeliverystreamRole.Arn

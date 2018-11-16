@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import boto3
 import sys
-from base64 import b64encode
 import json
 
 client = boto3.client('firehose')
@@ -14,7 +13,7 @@ records = []
 
 for x in range(1, number_of_messages, 1):
     records.append({
-        'Data': b64encode(bytes(json.dumps({'message': f'hello world {x}'}), 'utf-8'))
+        'Data': bytes(json.dumps({'message': f'hello world {x}'}), 'utf-8')
     })
 
 try:
