@@ -1,17 +1,14 @@
 [[source]]
+name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
-name = "pypi"
+
+[dev-packages]
 
 [packages]
-cfn-lint = "*"
-openapi-spec-validator = "*"
-boto3 = "*"
 troposphere = ">=2.0.0,<2.1.0"
 sceptre = "==2.0.2"
 ipython = "*"
-
-[dev-packages]
 
 [requires]
 python_version = "3.7"

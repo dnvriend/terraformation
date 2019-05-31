@@ -4,12 +4,10 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-cfn-lint = "*"
-openapi-spec-validator = "*"
 boto3 = "*"
-troposphere = ">=2.0.0,<2.1.0"
-sceptre = "==2.0.2"
+sceptre = "===2.0.3"
 ipython = "*"
+click = "*"
 
 [dev-packages]
 

@@ -8,6 +8,7 @@ connexion = "*"
 gevent = "*"
 greenlet = {version = "*", platform_python_implementation="=='CPython'"}
 openapi-spec-validator = "*"
+sceptre = "==1.4.2"
 
 [dev-packages]
 

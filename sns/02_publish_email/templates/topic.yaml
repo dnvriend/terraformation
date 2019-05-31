@@ -1,0 +1,16 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: ''
+
+Resources:
+  Topic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: 'EmailNotification'
+
+  TopicSubscription:
+    Type: 'AWS::SNS::Subscription'
+    Properties:
+      Protocol: 'email'
+      Endpoint: 'dnvriend@gmail.com'
+      TopicArn: !Ref 'Topic'

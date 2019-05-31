@@ -16,16 +16,16 @@ info: ## describe resources
 	@sceptre describe-env-resources $(environment)
 
 merge-lambda: ## merge lambda in api gateway
-#	aws-cfn-update \
-#		lambda-inline-code \
-#		--resource ProcessorFunction \
-#		--file lambdas/processor/identity_processor.py \
-#		templates/elasticsearch.yaml
 	aws-cfn-update \
 		lambda-inline-code \
 		--resource ProcessorFunction \
-		--file lambdas/processor/map_message_processor.py \
+		--file lambdas/processor/identity_processor.py \
 		templates/elasticsearch.yaml
+#	aws-cfn-update \
+#		lambda-inline-code \
+#		--resource ProcessorFunction \
+#		--file lambdas/processor/map_message_processor.py \
+#		templates/elasticsearch.yaml
 
 publish: ## publish messages to kinesis firehose
 	pipenv run python publish.py `sceptre describe-stack-outputs dnvriend/dev/eu-west-1 elasticsearch | cfn-flip --json | jq -r '.[] | select(.OutputKey=="KinesisStreamName") | .OutputValue'` 500

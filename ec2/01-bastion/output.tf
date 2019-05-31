@@ -1,0 +1,9 @@
+data "aws_iam_account_alias" "current" {}
+
+output "account_id" {
+  value = "${data.aws_iam_account_alias.current.account_alias}"
+}
+
+output "public_ip" {
+  value = "${aws_instance.bastion.public_ip}"
+}

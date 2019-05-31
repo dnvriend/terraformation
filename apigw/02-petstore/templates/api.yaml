@@ -17,6 +17,7 @@ Resources:
       BodyS3Location:
         Bucket: !Ref DeploymentBucket
         Key: 'swagger.yaml'
+      Name: QuzQuuz
 
   ApiGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
