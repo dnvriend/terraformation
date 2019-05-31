@@ -6,12 +6,6 @@ There are several commonly used filename extensions for X.509 certificates. Unfo
 .p12 – PKCS#12, may contain certificate(s) (public) and private keys (password protected)
 .pfx – PFX, predecessor of PKCS#12 (usually contains data in PKCS#12 format, e.g., with PFX files generated in IIS)
 
-Generate a key:
-1. ssh-keygen -t rsa -C "your-username or mail address" -b 4096 -f ~/.ssh/my-new-key
-2. copy your private key: pbcopy < ~/.ssh/my-new-key
-3. copy your public key: pbcopy < ~/.ssh/my-new-key.pub
-
-
 for example:
 
 ```bash
@@ -25,7 +19,7 @@ cp ~/.ssh/dnvriend2-key.pub .
 terraform apply -auto-approve
 
 # login to the instance
-
+ssh -i ~/.ssh/dnvriend-key dnvriend@<bastion-public-ip>
 ```
 
 ## ssm-agent
